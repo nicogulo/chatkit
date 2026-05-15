@@ -1,0 +1,316 @@
+{
+  "project": "ChatKit",
+  "branchName": "main",
+  "description": "Production-ready AI Chat SaaS Starter Kit \u2014 Next.js 15 + Supabase + Vercel AI SDK + Stripe. Clone, configure, deploy. Ship your AI product in hours.",
+  "techStack": {
+    "framework": "Next.js 15 (App Router)",
+    "language": "TypeScript (strict)",
+    "styling": "Tailwind CSS v4 + shadcn/ui v4",
+    "auth": "Supabase Auth (email + OAuth)",
+    "database": "Supabase PostgreSQL",
+    "ai": "Vercel AI SDK (OpenAI + Anthropic + Google)",
+    "billing": "Stripe",
+    "state": "Zustand",
+    "animation": "Framer Motion",
+    "email": "Resend",
+    "font": "Geist (Sans + Mono)",
+    "deploy": "Vercel"
+  },
+  "targetMarket": "Global developers & entrepreneurs who want to build AI chat products",
+  "pricing": {
+    "basic": 149,
+    "full": 249,
+    "premium": 399,
+    "currency": "USD"
+  },
+  "designTheme": "Dark + AI Gradient Glow (#09090b bg, #141419 cards, #7c3aed\u2192#2563eb\u2192#06b6d4 gradient, glassmorphism)",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Project scaffold & base config",
+      "description": "As a developer, I want to clone ChatKit and have a working Next.js project with all dependencies installed, so that I can start developing immediately.",
+      "acceptanceCriteria": [
+        "Next.js 15 project with App Router and TypeScript strict mode",
+        "All npm dependencies installed (supabase, ai sdk, stripe, zustand, framer-motion, resend, etc.)",
+        "Tailwind CSS v4 configured with dark theme colors",
+        "shadcn/ui initialized with base components",
+        "Geist font (Sans + Mono) configured in layout",
+        "globals.css with design tokens: --background, --card, --primary, --gradient-ai, glassmorphism, glow effects",
+        ".env.example with all required env vars documented",
+        "Folder structure: app/(auth), app/(chat), app/(landing), components/, lib/, utils/",
+        "`npm run build` passes with zero errors",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": "Implemented and verified - build passes, typecheck passes"
+    },
+    {
+      "id": "US-002",
+      "title": "Supabase database schema & migrations",
+      "description": "As a developer, I want the database schema pre-configured with tables for profiles, conversations, messages, usage, and subscriptions, so that I don't have to design the schema from scratch.",
+      "acceptanceCriteria": [
+        "profiles table: id (uuid, FK to auth.users), display_name, avatar_url, plan (free/pro/enterprise), stripe_customer_id, created_at, updated_at",
+        "conversations table: id (uuid), user_id (FK), title (text), model (text), system_prompt (text), created_at, updated_at",
+        "messages table: id (uuid), conversation_id (FK), role (enum: user/assistant/system), content (text), tokens_input (int), tokens_output (int), model (text), created_at",
+        "usage table: id (uuid), user_id (FK), model (text), tokens_input (int), tokens_output (int), created_at",
+        "subscriptions table: id (uuid), user_id (FK), stripe_subscription_id, plan (text), status (text), current_period_start, current_period_end, cancel_at_period_end (bool)",
+        "RLS policies: users can only CRUD their own data",
+        "Indexes on user_id, conversation_id, created_at for query performance",
+        "SQL migration file in supabase/migrations/",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "Implemented and verified - build passes, typecheck passes"
+    },
+    {
+      "id": "US-003",
+      "title": "Supabase client helpers & middleware",
+      "description": "As a developer, I want pre-configured Supabase client helpers for server, browser, and middleware, so that auth works seamlessly with Next.js App Router.",
+      "acceptanceCriteria": [
+        "utils/supabase/server.ts \u2014 createServerClient with cookie handling for Server Components",
+        "utils/supabase/client.ts \u2014 createBrowserClient for Client Components",
+        "utils/supabase/middleware.ts \u2014 session refresh in middleware",
+        "middleware.ts at root \u2014 refreshes auth session on every request, protects /chat and /settings routes",
+        "Redirect unauthenticated users from /chat/* to /login",
+        "Typecheck passes"
+      ],
+      "priority": 3,
+      "passes": true,
+      "notes": "Implemented and verified - build passes, typecheck passes"
+    },
+    {
+      "id": "US-004",
+      "title": "Authentication \u2014 Login page",
+      "description": "As a user, I want to sign in via email/password or OAuth (Google, GitHub), so that I can access my chat conversations.",
+      "acceptanceCriteria": [
+        "Login page at /login with dark theme, ChatKit branding",
+        "Email + password form with validation (Zod schema)",
+        "'Continue with Google' button \u2192 Supabase OAuth",
+        "'Continue with GitHub' button \u2192 Supabase OAuth",
+        "'Don't have an account? Sign up' link to /register",
+        "Error states: invalid credentials, network error",
+        "Loading state on submit button",
+        "Redirect to /chat after successful login",
+        "Typecheck passes"
+      ],
+      "priority": 4,
+      "passes": true,
+      "notes": "Auth with React Hook Form + Zod + Supabase Auth (email + Google + GitHub OAuth). Build passes."
+    },
+    {
+      "id": "US-005",
+      "title": "Authentication \u2014 Register page",
+      "description": "As a new user, I want to create an account via email/password or OAuth, so that I can start using ChatKit.",
+      "acceptanceCriteria": [
+        "Register page at /register with dark theme, ChatKit branding",
+        "Email + password form with validation (Zod: email format, password min 8 chars)",
+        "'Sign up with Google' button \u2192 Supabase OAuth",
+        "'Sign up with GitHub' button \u2192 Supabase OAuth",
+        "'Already have an account? Sign in' link to /login",
+        "Auto-create profile row in Supabase after registration (trigger or server action)",
+        "Error states: email already exists, weak password",
+        "Redirect to /chat after successful registration",
+        "Typecheck passes"
+      ],
+      "priority": 5,
+      "passes": true,
+      "notes": "Auth with React Hook Form + Zod + Supabase Auth (email + Google + GitHub OAuth). Build passes."
+    },
+    {
+      "id": "US-006",
+      "title": "Chat UI \u2014 Sidebar with conversation list",
+      "description": "As a user, I want a sidebar showing my conversations grouped by date, so that I can navigate between chats easily.",
+      "acceptanceCriteria": [
+        "Sidebar component: 280px width, bg-card, border-right",
+        "Header with ChatKit logo (gradient-text) and '+' new chat button",
+        "Search input for filtering conversations",
+        "Conversation list grouped by: Today, Yesterday, Last 7 Days, Older",
+        "Each item shows: message icon + truncated title (max 28 chars)",
+        "Active conversation highlighted with bg-primary/10 and text-primary",
+        "Hover state: bg-background",
+        "Scrollable when conversations exceed viewport",
+        "Footer: user avatar + name + plan badge + settings link",
+        "Mobile (<768px): sidebar hidden, accessible via hamburger/sheet",
+        "Typecheck passes"
+      ],
+      "priority": 6,
+      "passes": true,
+      "notes": "Sidebar with real DB conversations, grouped by date (Today/Yesterday/7 Days/Older), search, rename, delete, user footer with logout. Build passes."
+    },
+    {
+      "id": "US-007",
+      "title": "Chat UI \u2014 Message area with streaming",
+      "description": "As a user, I want to chat with AI and see responses stream in real-time, so that I have a ChatGPT-like experience.",
+      "acceptanceCriteria": [
+        "Chat area: flex-1, centered content (max-width 768px)",
+        "AI messages: sparkle avatar (32px, bg-primary/10, glow-ai), glass card bg, supports markdown",
+        "User messages: user avatar, bg-primary, text-primary-foreground, right-aligned",
+        "Code blocks: dark header bar with language label + copy button, syntax highlighting, gradient border",
+        "Streaming: tokens appear one-by-one using Vercel AI SDK useChat hook",
+        "Loading indicator while AI is generating (animated dots or shimmer)",
+        "Empty state for new conversation: centered greeting with AI sparkle icon",
+        "Auto-scroll to bottom on new message",
+        "Typecheck passes"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Chat UI \u2014 Input field with model selector",
+      "description": "As a user, I want to type messages and select which AI model to use, so that I can control my chat experience.",
+      "acceptanceCriteria": [
+        "Input field: gradient-border wrapper, bg-card, rounded-xl, glow on focus",
+        "Placeholder: 'Message ChatKit...'",
+        "Send button: bg-primary, disabled when input empty",
+        "Submit on Enter (not Shift+Enter for newline)",
+        "Model selector dropdown in header: GPT-4o, GPT-4o mini, Claude Sonnet, Gemini Flash",
+        "Selected model persists per conversation",
+        "Input clears after sending, focuses back",
+        "Typecheck passes"
+      ],
+      "priority": 8,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "Chat \u2014 Conversation management",
+      "description": "As a user, I want to create, rename, and delete conversations, so that I can organize my chat history.",
+      "acceptanceCriteria": [
+        "Create new conversation: click '+' button or navigate to /chat/new",
+        "Auto-title: first 50 chars of first user message",
+        "Rename conversation: edit title via sidebar (click \u2192 inline edit)",
+        "Delete conversation: action menu \u2192 confirm dialog \u2192 delete from DB",
+        "Conversation list updates in real-time after changes",
+        "Deleting active conversation redirects to /chat/new",
+        "Typecheck passes"
+      ],
+      "priority": 9,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "Landing page",
+      "description": "As a visitor, I want to see a beautiful landing page that explains ChatKit's features and pricing, so that I decide to sign up.",
+      "acceptanceCriteria": [
+        "Hero section: gradient-text heading, pill badge, CTA buttons (primary with glow + secondary with gradient-border)",
+        "Features grid: 6 feature cards (Multi-Model AI, Streaming, Auth, Stripe, Chat History, Premium UI) with icons",
+        "Tech stack section: pill badges for each technology",
+        "Pricing section: 3 tiers (Free $0, Pro $19, Enterprise $49) \u2014 Pro highlighted with gradient-border + glow",
+        "Navbar: logo, nav links, login, get started button. Glass effect on scroll",
+        "Footer: copyright, links",
+        "Fully responsive (mobile stacked, desktop grid)",
+        "Dark theme with AI gradient accents",
+        "Typecheck passes"
+      ],
+      "priority": 10,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-011",
+      "title": "Settings page \u2014 Profile & API keys",
+      "description": "As a user, I want to manage my profile and configure AI API keys, so that I can personalize my experience and use my own API keys.",
+      "acceptanceCriteria": [
+        "Settings page at /settings with back navigation",
+        "Profile section: avatar (64px with gradient ring), display name, email, edit button",
+        "API Keys section: input fields for OpenAI, Anthropic, Google keys (masked by default)",
+        "Plan & Usage section: current plan badge, usage bar (messages used / limit)",
+        "Upgrade button linking to Stripe billing (or /settings/billing)",
+        "Delete account button (destructive, with confirm dialog)",
+        "Typecheck passes"
+      ],
+      "priority": 11,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-012",
+      "title": "Stripe billing integration",
+      "description": "As a developer, I want Stripe billing pre-configured with subscription management, so that I can charge users for premium features.",
+      "acceptanceCriteria": [
+        "lib/stripe.ts with Stripe client initialization",
+        "Stripe checkout: server action to create checkout session for Pro/Enterprise plans",
+        "Stripe webhook handler at /api/stripe/webhook for subscription events",
+        "Webhook events handled: checkout.session.completed, customer.subscription.updated, customer.subscription.deleted",
+        "Subscription status synced to Supabase subscriptions table",
+        "Stripe Customer Portal for managing billing at /settings/billing",
+        "Usage limits enforced: Free=10 msg/day, Pro=unlimited, Enterprise=unlimited+teams",
+        "Usage counter incremented on each AI message",
+        "Typecheck passes"
+      ],
+      "priority": 12,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-013",
+      "title": "AI SDK integration \u2014 Multi-model support",
+      "description": "As a developer, I want Vercel AI SDK configured for multiple AI providers, so that end-users can switch between AI models seamlessly.",
+      "acceptanceCriteria": [
+        "lib/ai.ts with model registry: GPT-4o, GPT-4o mini, Claude Sonnet, Gemini Flash",
+        "API route at /api/chat using Vercel AI SDK streamText",
+        "Model selected via request body, defaults to GPT-4o mini for Free users",
+        "Token counting: input and output tokens tracked per message",
+        "Error handling: rate limit, quota exceeded, invalid API key",
+        "Streaming response with proper content-type headers",
+        "Typecheck passes"
+      ],
+      "priority": 13,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-014",
+      "title": "Documentation \u2014 README & setup guide",
+      "description": "As a buyer, I want comprehensive documentation, so that I can set up and customize ChatKit easily.",
+      "acceptanceCriteria": [
+        "README.md with: project overview, live demo link, screenshot, tech stack table, features list, quick start guide, project structure, customization guide, deployment guide, license",
+        ".env.example with all required and optional env vars documented with comments",
+        "SUPABASE_SETUP.md with step-by-step Supabase project + database setup",
+        "STRIPE_SETUP.md with Stripe configuration guide",
+        "All docs in clear, professional English",
+        "Typecheck passes"
+      ],
+      "priority": 14,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-015",
+      "title": "Marketing assets \u2014 Thumbnails, cover, screenshots",
+      "description": "As the seller, I want professional marketing assets, so that the Gumroad listing looks appealing and converts visitors.",
+      "acceptanceCriteria": [
+        "Thumbnail: 1280x1280px, dark theme, ChatKit branding, AI gradient accents",
+        "Cover image: 1920x600px, dark theme, product name + tagline + gradient",
+        "OG image: 1200x630px for social sharing",
+        "12-16 screenshots of all pages: landing, chat, login, register, settings, pricing (dark + mobile)",
+        "All assets in public/ directory",
+        "Typecheck passes"
+      ],
+      "priority": 15,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-016",
+      "title": "Gumroad listing & packaging",
+      "description": "As the seller, I want the product packaged and listed on Gumroad, so that buyers can purchase and download it.",
+      "acceptanceCriteria": [
+        "Source code packaged as ZIP (excluding node_modules, .next, .env.local)",
+        "Gumroad product created with: title, description, price tiers, cover, thumbnail, screenshots",
+        "Product description includes: features, tech stack, what's included, setup time, live demo link",
+        "Buyer receives ZIP file on purchase (tested)",
+        "Typecheck passes"
+      ],
+      "priority": 16,
+      "passes": false,
+      "notes": ""
+    }
+  ]
+}
