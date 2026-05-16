@@ -31,15 +31,16 @@ function dbMessagesToUIMessages(dbMessages: Array<{ role: string; content: strin
   }));
 }
 
-function MessageSkeleton({ count = 3 }: { count?: number }) {
+function MessageSkeleton({ count = 6 }: { count?: number }) {
   return (
     <div className="mx-auto max-w-3xl space-y-6 px-4 py-6">
       {Array.from({ length: count }).map((_, i) => (
         <div key={i} className={`flex ${i % 2 === 0 ? "justify-end" : "justify-start"}`}>
-          <div className={`max-w-[75%] rounded-2xl px-4 py-3 ${i % 2 === 0 ? "bg-primary/20" : "bg-card border border-border"}`}>
-            <div className="space-y-2">
-              <div className="h-3 rounded-full bg-muted animate-pulse" style={{ width: `${60 + Math.random() * 30}%` }} />
-              {Math.random() > 0.4 && <div className="h-3 rounded-full bg-muted animate-pulse" style={{ width: `${40 + Math.random() * 40}%` }} />}
+          <div className={`max-w-[75%] rounded-2xl px-4 py-4 ${i % 2 === 0 ? "bg-primary/20" : "bg-card border border-border"}`}>
+            <div className="space-y-2.5">
+              <div className="h-3 rounded-full bg-muted animate-pulse" style={{ width: `${50 + Math.random() * 40}%` }} />
+              <div className="h-3 rounded-full bg-muted animate-pulse" style={{ width: `${40 + Math.random() * 45}%` }} />
+              {i % 2 === 1 && <div className="h-3 rounded-full bg-muted animate-pulse" style={{ width: `${30 + Math.random() * 35}%` }} />}
             </div>
           </div>
         </div>
