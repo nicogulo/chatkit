@@ -11,9 +11,8 @@ import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { motion, AnimatePresence } from "framer-motion";
 import { useChatStore } from "@/lib/store/chat-store";
-import { getMessages, createConversation } from "@/lib/actions/conversations";
+import { getMessages } from "@/lib/actions/conversations";
 import { ModelSelector } from "./model-selector";
-import { useRouter } from "next/navigation";
 
 /** Extract text from UIMessage parts (AI SDK v6) */
 function getMessageText(message: { parts: Array<{ type: string; text?: string }> }): string {
@@ -76,14 +75,12 @@ function MessageSkeleton({ count = 3 }: { count?: number }) {
 
 export function ChatArea() {
   const params = useParams();
-  const router = useRouter();
   const conversationId = params?.id as string | undefined;
   const { sidebarOpen, toggleSidebar, selectedModel } = useChatStore();
   const [input, setInput] = useState("");
   const [copiedBlock, setCopiedBlock] = useState<string | null>(null);
   const [historyLoaded, setHistoryLoaded] = useState<string | null>(null);
   const [loadingHistory, setLoadingHistory] = useState(false);
-  const [pendingMessage, setPendingMessage] = useState<string | null>(null);
 
   const transport = useMemo(
     () =>
@@ -106,7 +103,7 @@ export function ChatArea() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const isLoading = status === "submitted" || status === "streaming" || !!pendingMessage;
+  const isLoading = status === "submitted" || status === "streaming";
 
   // Load chat history when navigating to a conversation
   useEffect(() => {
@@ -136,17 +133,6 @@ export function ChatArea() {
     return () => { cancelled = true; };
   }, [conversationId, historyLoaded, setMessages]);
 
-  // Send pending message after navigation to new conversation
-  useEffect(() => {
-    if (pendingMessage && conversationId && !conversationId.startsWith("temp-")) {
-      const msg = pendingMessage;
-      setPendingMessage(null);
-      // Small delay to let useChat initialize with new ID
-      const timer = setTimeout(() => sendMessage({ text: msg }), 150);
-      return () => clearTimeout(timer);
-    }
-  }, [pendingMessage, conversationId, sendMessage]);
-
   // Auto-scroll
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -162,36 +148,13 @@ export function ChatArea() {
   }, [input]);
 
   const handleSubmit = useCallback(
-    async (e: React.FormEvent) => {
+    (e: React.FormEvent) => {
       e.preventDefault();
-      if (!input.trim() || isLoading) return;
-
-      const messageText = input.trim();
+      if (!input.trim() || isLoading || !conversationId) return;
+      sendMessage({ text: input.trim() });
       setInput("");
-
-      // If no conversation yet, create one first
-      if (!conversationId) {
-        try {
-          setPendingMessage(messageText);
-          const result = await createConversation(messageText.slice(0, 60));
-          if (result && "id" in result) {
-            setHistoryLoaded(result.id);
-            router.push(`/chat/${result.id}`);
-          } else {
-            setPendingMessage(null);
-            setInput(messageText);
-          }
-        } catch (err) {
-          console.error("[Create conversation failed]", err);
-          setPendingMessage(null);
-          setInput(messageText);
-        }
-        return;
-      }
-
-      sendMessage({ text: messageText });
     },
-    [input, isLoading, sendMessage, conversationId, router, setHistoryLoaded]
+    [input, isLoading, sendMessage, conversationId]
   );
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
