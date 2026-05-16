@@ -24,7 +24,6 @@ export function HeroSection() {
         transition={{ duration: 0.6, delay: 0.1 }}
         className="mx-auto max-w-4xl text-5xl font-bold tracking-tight sm:text-6xl lg:text-7xl"
       >
-        Build your{" "}
         <span className="gradient-text">
           <TypewriterText
             texts={["AI Chat product", "SaaS in a weekend", "next unicorn", "revenue machine"]}
@@ -33,7 +32,8 @@ export function HeroSection() {
             pauseMs={2500}
           />
         </span>
-        {" "}with Next.js
+        <br />
+        with Next.js
       </motion.h1>
 
       <motion.p
@@ -67,28 +67,35 @@ export function HeroSection() {
         </Link>
       </motion.div>
 
-      {/* Social proof */}
+      {/* Company logos */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.6, delay: 0.5 }}
-        className="mt-16 flex flex-col items-center gap-3"
+        className="mt-16"
       >
-        <div className="flex -space-x-2">
-          {[0, 1, 2, 3, 4].map((i) => (
-            <div
-              key={i}
-              className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-background bg-gradient-to-br from-primary/60 to-accent/60 text-xs font-bold text-white"
-            >
-              {String.fromCharCode(65 + i)}
-            </div>
-          ))}
-        </div>
-        <p className="text-sm text-muted-foreground">
-          Trusted by <span className="text-foreground font-medium">500+</span> developers
+        <p className="mb-6 text-xs font-medium uppercase tracking-widest text-muted-foreground/60">
+          Trusted by developers at
         </p>
+        <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-4">
+          <CompanyLogo name="Vercel" />
+          <CompanyLogo name="Supabase" />
+          <CompanyLogo name="Stripe" />
+          <CompanyLogo name="GitHub" />
+          <CompanyLogo name="Figma" />
+          <CompanyLogo name="Notion" />
+        </div>
       </motion.div>
     </section>
+  );
+}
+
+/** Monochrome company logo placeholder */
+function CompanyLogo({ name }: { name: string }) {
+  return (
+    <span className="text-lg font-bold tracking-tight text-muted-foreground/40 transition hover:text-muted-foreground/70 select-none">
+      {name}
+    </span>
   );
 }
 
@@ -119,11 +126,7 @@ export function ChatPreviewSection() {
             </div>
             <div className="flex justify-start">
               <div className="max-w-[80%] rounded-2xl rounded-bl-md border border-border/50 bg-card px-4 py-2.5 text-sm text-muted-foreground">
-                <TypingChatBubble
-                  text="Quantum computing uses qubits instead of classical bits. A qubit can be 0, 1, or both simultaneously — called superposition. This lets quantum computers explore many solutions at once, solving certain problems exponentially faster."
-                  delay={800}
-                  speed={20}
-                />
+                <LoopingChatBubble />
               </div>
             </div>
           </div>
@@ -132,3 +135,20 @@ export function ChatPreviewSection() {
     </section>
   );
 }
+
+/** Chat bubble that loops: type → pause 2s → clear → type again */
+function LoopingChatBubble() {
+  const [key, setKey] = useState(0);
+
+  return (
+    <TypingChatBubble
+      key={key}
+      text="Quantum computing uses qubits instead of classical bits. A qubit can be 0, 1, or both simultaneously — called superposition. This lets quantum computers explore many solutions at once, solving certain problems exponentially faster."
+      delay={500}
+      speed={20}
+      onComplete={() => setTimeout(() => setKey((k) => k + 1), 2000)}
+    />
+  );
+}
+
+import { useState } from "react";

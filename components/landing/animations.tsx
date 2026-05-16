@@ -63,11 +63,13 @@ export function TypingChatBubble({
   text,
   delay = 500,
   speed = 25,
+  onComplete,
   className = "",
 }: {
   text: string;
   delay?: number;
   speed?: number;
+  onComplete?: () => void;
   className?: string;
 }) {
   const [display, setDisplay] = useState("");
@@ -80,7 +82,10 @@ export function TypingChatBubble({
 
   useEffect(() => {
     if (!started) return;
-    if (display.length >= text.length) return;
+    if (display.length >= text.length) {
+      onComplete?.();
+      return;
+    }
 
     const timer = setTimeout(() => {
       setDisplay(text.slice(0, display.length + 1));
