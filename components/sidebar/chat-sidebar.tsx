@@ -11,6 +11,10 @@ import {
   Check,
   Search,
   PanelLeftClose,
+  Settings,
+  LogOut,
+  User,
+  ChevronUp,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -20,6 +24,7 @@ import {
   deleteConversation,
 } from "@/lib/actions/conversations";
 import { useChatStore } from "@/lib/store/chat-store";
+import { createClient } from "@/lib/supabase/client";
 import type { Conversation } from "@/types";
 
 export function ChatSidebar() {
@@ -39,7 +44,9 @@ export function ChatSidebar() {
   const [search, setSearch] = useState("");
   const [editTitle, setEditTitle] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const editInputRef = useRef<HTMLInputElement>(null);
+  const userMenuRef = useRef<HTMLDivElement>(null);
 
   // Set active from URL
   useEffect(() => {
@@ -55,6 +62,23 @@ export function ChatSidebar() {
   const loadConversations = async () => {
     const data = await getConversations();
     setConversations(data as Conversation[]);
+  };
+
+  // Close user menu on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node))
+        setUserMenuOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const handleSignOut = async () => {
+    setUserMenuOpen(false);
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/login");
   };
 
   // Filter by search
@@ -314,6 +338,61 @@ export function ChatSidebar() {
               {search ? "No results" : "No conversations yet"}
             </div>
           )}
+        </div>
+
+        {/* User Menu — Bottom */}
+        <div ref={userMenuRef} className="relative border-t border-border/50 p-2">
+          <button
+            onClick={() => setUserMenuOpen(!userMenuOpen)}
+            className="flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-sm text-muted-foreground hover:bg-muted/50 hover:text-foreground transition"
+          >
+            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-primary/60 to-accent/60 text-xs font-bold text-white">
+              N
+            </div>
+            <span className="flex-1 truncate text-xs">Nico</span>
+            <ChevronUp className={`h-3.5 w-3.5 transition ${userMenuOpen ? "" : "rotate-180"}`} />
+          </button>
+
+          <AnimatePresence>
+            {userMenuOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 4 }}
+                transition={{ duration: 0.15 }}
+                className="absolute bottom-full left-2 right-2 mb-1 rounded-lg border border-border/50 bg-card p-1 shadow-xl"
+              >
+                <button
+                  onClick={() => {
+                    setUserMenuOpen(false);
+                    router.push("/settings");
+                  }}
+                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-xs text-muted-foreground hover:bg-muted/50 hover:text-foreground transition"
+                >
+                  <Settings className="h-3.5 w-3.5" />
+                  Settings
+                </button>
+                <button
+                  onClick={() => {
+                    setUserMenuOpen(false);
+                    router.push("/settings/billing");
+                  }}
+                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-xs text-muted-foreground hover:bg-muted/50 hover:text-foreground transition"
+                >
+                  <User className="h-3.5 w-3.5" />
+                  Billing
+                </button>
+                <div className="my-1 border-t border-border/30" />
+                <button
+                  onClick={handleSignOut}
+                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-xs text-destructive hover:bg-destructive/5 transition"
+                >
+                  <LogOut className="h-3.5 w-3.5" />
+                  Sign Out
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
     </motion.aside>
