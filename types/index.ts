@@ -70,15 +70,15 @@ export interface ModelConfig {
 
 export const MODELS: ModelConfig[] = [
   {
-    id: "glm-4.7-flash",
-    name: "GLM-4.7 Flash",
-    description: "Fast & lightweight",
+    id: "glm-4.7",
+    name: "GLM-4.7",
+    description: "Balanced & stable (recommended)",
     minPlan: "free",
   },
   {
-    id: "glm-4.7",
-    name: "GLM-4.7",
-    description: "Balanced performance",
+    id: "glm-4.7-flash",
+    name: "GLM-4.7 Flash",
+    description: "Fast & lightweight (may be unstable)",
     minPlan: "free",
   },
   {
