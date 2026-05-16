@@ -68,6 +68,7 @@ export async function POST(req: Request) {
     const result = streamText({
       model: getModel(selectedModel),
       messages: modelMessages,
+      system: `You are ChatKit AI, a helpful assistant. Today's date is ${new Date().toISOString().split("T")[0]} (${new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}). Always use the current year (2026) when asked about dates. Respond concisely and accurately.`,
       maxOutputTokens: 4096,
       abortSignal: AbortSignal.timeout(30000), // 30s timeout — prevent infinite hang
       onFinish: async ({ usage, text }) => {

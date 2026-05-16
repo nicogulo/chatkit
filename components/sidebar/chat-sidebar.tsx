@@ -43,8 +43,9 @@ export function ChatSidebar() {
 
   const [search, setSearch] = useState("");
   const [editTitle, setEditTitle] = useState("");
-  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
   const editInputRef = useRef<HTMLInputElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
@@ -62,6 +63,7 @@ export function ChatSidebar() {
   const loadConversations = async () => {
     const data = await getConversations();
     setConversations(data as Conversation[]);
+    setLoading(false);
   };
 
   // Close user menu on outside click
@@ -165,25 +167,34 @@ export function ChatSidebar() {
     }
   };
 
-  // ✅ OPTIMISTIC: Delete — instant remove, API in background
+  // ✅ OPTIMISTIC: Delete — instant remove with single click + visual confirm
   const handleDelete = async (id: string) => {
-    setDeleteConfirm(null);
-    const wasActive = activeConversationId === id;
+    // If already in delete-confirm state, do the delete
+    if (deletingId === id) {
+      setDeletingId(null);
+      const wasActive = activeConversationId === id;
 
-    // Optimistic: remove from list
-    setConversations((prev) => prev.filter((c) => c.id !== id));
-    if (wasActive) {
-      setActiveConversationId(null);
-      router.push("/chat");
+      // Optimistic: remove from list
+      setConversations((prev) => prev.filter((c) => c.id !== id));
+      if (wasActive) {
+        setActiveConversationId(null);
+        router.push("/chat");
+      }
+
+      // Background API call
+      try {
+        await deleteConversation(id);
+      } catch {
+        // Rollback by reloading
+        loadConversations();
+      }
+      return;
     }
 
-    // Background API call
-    try {
-      await deleteConversation(id);
-    } catch {
-      // Rollback by reloading
-      loadConversations();
-    }
+    // First click: show confirm state
+    setDeletingId(id);
+    // Auto-cancel after 3 seconds
+    setTimeout(() => setDeletingId((prev) => (prev === id ? null : prev)), 3000);
   };
 
   const startEditing = (c: Conversation) => {
@@ -236,6 +247,34 @@ export function ChatSidebar() {
 
         {/* Conversation List */}
         <div className="flex-1 overflow-y-auto px-2 scrollbar-thin">
+          {loading ? (
+            <div className="space-y-1 p-2">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-2 rounded-lg px-2 py-2">
+                  <div className="h-3.5 w-3.5 rounded bg-muted animate-pulse flex-shrink-0" />
+                  <div className="flex-1 space-y-1.5">
+                    <div
+                      className="h-2.5 rounded-full bg-muted animate-pulse"
+                      style={{ width: `${50 + Math.random() * 40}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+              <div className="pt-2">
+                <div className="h-2 w-12 rounded-full bg-muted/50 animate-pulse mb-2" />
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={`g${i}`} className="flex items-center gap-2 rounded-lg px-2 py-2">
+                    <div className="h-3.5 w-3.5 rounded bg-muted animate-pulse flex-shrink-0" />
+                    <div
+                      className="h-2.5 rounded-full bg-muted animate-pulse"
+                      style={{ width: `${40 + Math.random() * 45}%` }}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+          <>
           {Object.entries(groups).map(([label, convos]) => (
             <div key={label} className="mb-3">
               <p className="px-2 py-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60">
@@ -303,7 +342,7 @@ export function ChatSidebar() {
                         >
                           <Pencil className="h-3 w-3" />
                         </button>
-                        {deleteConfirm === c.id ? (
+                        {deletingId === c.id ? (
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -317,8 +356,7 @@ export function ChatSidebar() {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              setDeleteConfirm(c.id);
-                              setTimeout(() => setDeleteConfirm(null), 3000);
+                              handleDelete(c.id);
                             }}
                             className="rounded p-0.5 text-muted-foreground hover:text-destructive"
                           >
@@ -333,10 +371,12 @@ export function ChatSidebar() {
             </div>
           ))}
 
-          {filtered.length === 0 && (
+          {filtered.length === 0 && !loading && (
             <div className="px-2 py-8 text-center text-xs text-muted-foreground/60">
               {search ? "No results" : "No conversations yet"}
             </div>
+          )}
+          </>
           )}
         </div>
 
