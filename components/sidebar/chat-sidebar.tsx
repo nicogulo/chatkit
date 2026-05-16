@@ -108,29 +108,10 @@ export function ChatSidebar() {
     groups[label].push(c);
   }
 
-  // ✅ New chat — create then navigate
+  // ✅ New chat — navigate to welcome screen instantly
   const handleNew = async () => {
-    try {
-      const result = await createConversation();
-      if (result && "id" in result) {
-        // Add to sidebar instantly
-        const now = new Date().toISOString();
-        const newConvo: Conversation = {
-          id: result.id,
-          user_id: "",
-          title: "New Chat",
-          model: "glm-4.5-air",
-          system_prompt: null,
-          created_at: now,
-          updated_at: now,
-        };
-        setConversations([newConvo, ...conversations]);
-        setActiveConversationId(result.id);
-        router.push(`/chat/${result.id}`);
-      }
-    } catch {
-      // Silent fail
-    }
+    setActiveConversationId(null);
+    router.push("/chat");
   };
 
   // ✅ OPTIMISTIC: Rename — instant update title, API in background

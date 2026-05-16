@@ -3,7 +3,7 @@
 import { useChat, type UIMessage } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { Send, Loader2, PanelLeft, Sparkles } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -13,7 +13,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useChatStore } from "@/lib/store/chat-store";
 import { getMessages, createConversation } from "@/lib/actions/conversations";
 import { ModelSelector } from "./model-selector";
-import { useRouter } from "next/navigation";
 
 /** Extract text from UIMessage parts (AI SDK v6) */
 function getMessageText(message: { parts: Array<{ type: string; text?: string }> }): string {
@@ -23,7 +22,6 @@ function getMessageText(message: { parts: Array<{ type: string; text?: string }>
     .join("");
 }
 
-/** Convert DB messages to UIMessage format */
 function dbMessagesToUIMessages(dbMessages: Array<{ role: string; content: string; created_at: string }>): UIMessage[] {
   return dbMessages.map((msg, i) => ({
     id: `hist-${i}`,
@@ -33,39 +31,15 @@ function dbMessagesToUIMessages(dbMessages: Array<{ role: string; content: strin
   }));
 }
 
-/** Skeleton component for loading messages */
 function MessageSkeleton({ count = 3 }: { count?: number }) {
   return (
     <div className="mx-auto max-w-3xl space-y-6 px-4 py-6">
       {Array.from({ length: count }).map((_, i) => (
-        <div
-          key={i}
-          className={`flex ${i % 2 === 0 ? "justify-end" : "justify-start"}`}
-        >
-          <div
-            className={`max-w-[75%] rounded-2xl px-4 py-3 ${
-              i % 2 === 0
-                ? "bg-primary/20"
-                : "bg-card border border-border"
-            }`}
-          >
+        <div key={i} className={`flex ${i % 2 === 0 ? "justify-end" : "justify-start"}`}>
+          <div className={`max-w-[75%] rounded-2xl px-4 py-3 ${i % 2 === 0 ? "bg-primary/20" : "bg-card border border-border"}`}>
             <div className="space-y-2">
-              <div
-                className="h-3 rounded-full bg-muted animate-pulse"
-                style={{ width: `${60 + Math.random() * 30}%` }}
-              />
-              {Math.random() > 0.4 && (
-                <div
-                  className="h-3 rounded-full bg-muted animate-pulse"
-                  style={{ width: `${40 + Math.random() * 40}%` }}
-                />
-              )}
-              {Math.random() > 0.7 && (
-                <div
-                  className="h-3 rounded-full bg-muted animate-pulse"
-                  style={{ width: `${20 + Math.random() * 30}%` }}
-                />
-              )}
+              <div className="h-3 rounded-full bg-muted animate-pulse" style={{ width: `${60 + Math.random() * 30}%` }} />
+              {Math.random() > 0.4 && <div className="h-3 rounded-full bg-muted animate-pulse" style={{ width: `${40 + Math.random() * 40}%` }} />}
             </div>
           </div>
         </div>
@@ -74,58 +48,125 @@ function MessageSkeleton({ count = 3 }: { count?: number }) {
   );
 }
 
-export function ChatArea() {
-  const params = useParams();
+// ─── Welcome Screen (no conversation, no useChat) ───
+function WelcomeScreen() {
   const router = useRouter();
-  const conversationId = params?.id as string | undefined;
+  const { sidebarOpen, toggleSidebar, selectedModel, setConversations, conversations } = useChatStore();
+  const [input, setInput] = useState("");
+  const [sending, setSending] = useState(false);
+
+  const handleSend = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!input.trim() || sending) return;
+
+    const text = input.trim();
+    setSending(true);
+
+    try {
+      const result = await createConversation(text.slice(0, 60));
+      if (result && "id" in result) {
+        const now = new Date().toISOString();
+        setConversations([{
+          id: result.id,
+          user_id: "",
+          title: text.slice(0, 60) + (text.length > 60 ? "…" : ""),
+          model: selectedModel,
+          system_prompt: null,
+          created_at: now,
+          updated_at: now,
+        }, ...conversations]);
+        // Full navigation — chat/{id} will handle useChat + send
+        window.location.href = `/chat/${result.id}`;
+      }
+    } catch {
+      setSending(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-1 flex-col">
+      <div className="flex items-center gap-2 border-b border-border px-4 py-3">
+        {!sidebarOpen && (
+          <button onClick={toggleSidebar} className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition">
+            <PanelLeft className="h-4 w-4" />
+          </button>
+        )}
+        <span className="text-sm font-medium gradient-text">New Chat</span>
+      </div>
+
+      <div className="flex flex-1 flex-col items-center justify-center gap-6 px-4">
+        <div className="flex items-center gap-2">
+          <Sparkles className="h-8 w-8 text-primary" />
+          <h1 className="text-3xl font-bold gradient-text">ChatKit</h1>
+        </div>
+        <p className="text-sm text-muted-foreground max-w-md text-center">
+          Start a conversation or select one from the sidebar.
+        </p>
+      </div>
+
+      <div className="border-t border-border p-4">
+        <form onSubmit={handleSend} className="mx-auto flex max-w-3xl items-end gap-2">
+          <div className="flex-1">
+            <textarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(e); } }}
+              placeholder="Send a message..."
+              rows={1}
+              disabled={sending}
+              className="w-full resize-none rounded-xl bg-card px-4 py-3 text-sm outline-none border border-border focus:border-primary/50 transition placeholder:text-muted-foreground/60 disabled:opacity-50"
+            />
+          </div>
+          <ModelSelector />
+          <button
+            type="submit"
+            disabled={sending || !input.trim()}
+            className="glow rounded-xl bg-primary p-3 text-primary-foreground hover:bg-primary/90 transition disabled:opacity-40"
+          >
+            {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ─── Chat View (has conversation, uses useChat) ───
+function ChatView({ conversationId }: { conversationId: string }) {
   const { sidebarOpen, toggleSidebar, selectedModel, setConversations, conversations } = useChatStore();
   const [input, setInput] = useState("");
   const [copiedBlock, setCopiedBlock] = useState<string | null>(null);
   const [historyLoaded, setHistoryLoaded] = useState<string | null>(null);
   const [loadingHistory, setLoadingHistory] = useState(false);
-  const [pendingMsg, setPendingMsg] = useState<string | null>(null);
 
   const transport = useMemo(
-    () =>
-      new DefaultChatTransport({
-        api: "/api/chat",
-        body: { model: selectedModel, conversationId },
-      }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    () => new DefaultChatTransport({
+      api: "/api/chat",
+      body: { model: selectedModel, conversationId },
+    }),
     [selectedModel, conversationId]
   );
 
   const { messages, setMessages, sendMessage, status, error } = useChat({
-    id: conversationId ?? "new",
+    id: conversationId,
     transport,
-    onError: (err) => {
-      console.error("[Chat Error]", err);
-    },
+    onError: (err) => console.error("[Chat Error]", err),
   });
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const isLoading = status === "submitted" || status === "streaming";
 
-  const isLoading = status === "submitted" || status === "streaming" || !!pendingMsg;
-
-  // Load chat history when navigating to a conversation
+  // Load chat history
   useEffect(() => {
-    if (!conversationId || conversationId.startsWith("temp-")) {
-      // New chat — clear messages immediately
-      setMessages([]);
-      setHistoryLoaded(conversationId ?? null);
-      return;
-    }
     if (historyLoaded === conversationId) return;
-
     let cancelled = false;
     setLoadingHistory(true);
 
     getMessages(conversationId).then((data) => {
       if (cancelled) return;
       if (data && data.length > 0) {
-        const uiMsgs = dbMessagesToUIMessages(data as Array<{ role: string; content: string; created_at: string }>);
-        setMessages(uiMsgs);
+        setMessages(dbMessagesToUIMessages(data as Array<{ role: string; content: string; created_at: string }>));
       } else {
         setMessages([]);
       }
@@ -136,86 +177,36 @@ export function ChatArea() {
     return () => { cancelled = true; };
   }, [conversationId, historyLoaded, setMessages]);
 
-  // Send pending message after navigating from /chat to /chat/{id}
-  useEffect(() => {
-    if (pendingMsg && conversationId && !conversationId.startsWith("temp-")) {
-      const msg = pendingMsg;
-      setPendingMsg(null);
-      const timer = setTimeout(() => sendMessage({ text: msg }), 200);
-      return () => clearTimeout(timer);
-    }
-  }, [pendingMsg, conversationId, sendMessage]);
-
-  // Auto-scroll
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loadingHistory]);
 
-  // Auto-resize textarea
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height =
-        Math.min(textareaRef.current.scrollHeight, 200) + "px";
+      textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 200) + "px";
     }
   }, [input]);
 
   const handleSubmit = useCallback(
-    async (e: React.FormEvent) => {
+    (e: React.FormEvent) => {
       e.preventDefault();
       if (!input.trim() || isLoading) return;
-
-      const messageText = input.trim();
+      const text = input.trim();
       setInput("");
+      sendMessage({ text });
 
-      // Case 1: No conversation yet (/chat) — create one then send
-      if (!conversationId) {
-        try {
-          const result = await createConversation(messageText.slice(0, 60));
-          if (result && "id" in result) {
-            // Update sidebar
-            const now = new Date().toISOString();
-            setConversations([{
-              id: result.id,
-              user_id: "",
-              title: messageText.slice(0, 60),
-              model: "glm-4.5-air",
-              system_prompt: null,
-              created_at: now,
-              updated_at: now,
-            }, ...conversations]);
-            // Navigate to new conversation — message will be sent via pendingMsg
-            setPendingMsg(messageText);
-            router.push(`/chat/${result.id}`);
-          }
-        } catch (err) {
-          console.error("[Create conversation failed]", err);
-          setInput(messageText);
-        }
-        return;
-      }
-
-      // Case 2: Existing conversation — just send
-      sendMessage({ text: messageText });
-
-      // Update sidebar title from first message if still "New Chat"
-      const currentConvo = conversations.find((c) => c.id === conversationId);
-      if (currentConvo && (currentConvo.title === "New Chat" || currentConvo.title.startsWith("temp"))) {
-        const title = messageText.slice(0, 60) + (messageText.length > 60 ? "…" : "");
+      // Update sidebar title from first message
+      const convo = conversations.find((c) => c.id === conversationId);
+      if (convo && convo.title === "New Chat") {
+        const title = text.slice(0, 60) + (text.length > 60 ? "…" : "");
         setConversations((prev: import("@/types").Conversation[]) =>
           prev.map((c: import("@/types").Conversation) => c.id === conversationId ? { ...c, title } : c)
         );
       }
     },
-    [input, isLoading, sendMessage, conversationId, router, setConversations, conversations]
+    [input, isLoading, sendMessage, conversationId, conversations, setConversations]
   );
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSubmit(e);
-    }
-  };
 
   const copyCode = (code: string, id: string) => {
     navigator.clipboard.writeText(code);
@@ -223,86 +214,18 @@ export function ChatArea() {
     setTimeout(() => setCopiedBlock(null), 2000);
   };
 
-  const inputElement = (
-    <div className="border-t border-border p-4">
-      <form onSubmit={handleSubmit} className="mx-auto flex max-w-3xl items-end gap-2">
-        <div className="flex-1">
-          <textarea
-            ref={textareaRef}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Send a message..."
-            rows={1}
-            className="w-full resize-none rounded-xl bg-card px-4 py-3 text-sm outline-none border border-border focus:border-primary/50 transition placeholder:text-muted-foreground/60"
-          />
-        </div>
-        <ModelSelector />
-        <button
-          type="submit"
-          disabled={isLoading || !input.trim()}
-          className="glow rounded-xl bg-primary p-3 text-primary-foreground hover:bg-primary/90 transition disabled:opacity-40"
-        >
-          {isLoading ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Send className="h-4 w-4" />
-          )}
-        </button>
-      </form>
-    </div>
-  );
-
-  // Empty state — no conversation selected
-  if (!conversationId) {
-    return (
-      <div className="flex flex-1 flex-col">
-        <div className="flex items-center gap-2 border-b border-border px-4 py-3">
-          {!sidebarOpen && (
-            <button
-              onClick={toggleSidebar}
-              className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition"
-            >
-              <PanelLeft className="h-4 w-4" />
-            </button>
-          )}
-          <span className="text-sm font-medium gradient-text">New Chat</span>
-        </div>
-
-        <div className="flex flex-1 flex-col items-center justify-center gap-6 px-4">
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-8 w-8 text-primary" />
-            <h1 className="text-3xl font-bold gradient-text">ChatKit</h1>
-          </div>
-          <p className="text-sm text-muted-foreground max-w-md text-center">
-            Start a conversation or select one from the sidebar.
-          </p>
-        </div>
-
-        {inputElement}
-      </div>
-    );
-  }
-
   return (
     <div className="flex flex-1 flex-col">
-      {/* Header */}
       <div className="flex items-center gap-2 border-b border-border px-4 py-3">
         {!sidebarOpen && (
-          <button
-            onClick={toggleSidebar}
-            className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition"
-          >
+          <button onClick={toggleSidebar} className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition">
             <PanelLeft className="h-4 w-4" />
           </button>
         )}
         <span className="text-sm font-medium text-foreground">Chat</span>
-        {loadingHistory && (
-          <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
-        )}
+        {loadingHistory && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
       </div>
 
-      {/* Messages */}
       <div className="flex-1 overflow-y-auto">
         {loadingHistory ? (
           <MessageSkeleton count={4} />
@@ -316,115 +239,97 @@ export function ChatArea() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.2 }}
-                    className={`flex ${
-                      message.role === "user" ? "justify-end" : "justify-start"
-                    }`}
+                    className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
                   >
-                    <div
-                      className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
-                        message.role === "user"
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-card border border-border"
-                      }`}
-                    >
+                    <div className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${message.role === "user" ? "bg-primary text-primary-foreground" : "bg-card border border-border"}`}>
                       {message.role === "assistant" ? (
                         <div className="prose prose-invert prose-sm max-w-none">
-                          <ReactMarkdown
-                            remarkPlugins={[remarkGfm]}
-                            components={{
-                              code({ className, children, ...props }) {
-                                const match = /language-(\w+)/.exec(
-                                  className || ""
-                                );
-                                const code = String(children).replace(/\n$/, "");
-                                const blockId = `block-${i}`;
-
-                                if (match) {
-                                  return (
-                                    <div className="relative group my-3">
-                                      <div className="flex items-center justify-between rounded-t-lg bg-[#282c34] px-4 py-1.5 text-xs text-gray-400">
-                                        <span>{match[1]}</span>
-                                        <button
-                                          onClick={() => copyCode(code, blockId)}
-                                          className="text-xs text-gray-400 hover:text-white transition"
-                                        >
-                                          {copiedBlock === blockId
-                                            ? "Copied!"
-                                            : "Copy"}
-                                        </button>
-                                      </div>
-                                      <SyntaxHighlighter
-                                        style={oneDark}
-                                        language={match[1]}
-                                        PreTag="div"
-                                        customStyle={{
-                                          margin: 0,
-                                          borderRadius: "0 0 0.5rem 0.5rem",
-                                        }}
-                                      >
-                                        {code}
-                                      </SyntaxHighlighter>
-                                    </div>
-                                  );
-                                }
+                          <ReactMarkdown remarkPlugins={[remarkGfm]} components={{
+                            code({ className, children, ...props }) {
+                              const match = /language-(\w+)/.exec(className || "");
+                              const code = String(children).replace(/\n$/, "");
+                              const blockId = `block-${i}`;
+                              if (match) {
                                 return (
-                                  <code
-                                    className="rounded bg-muted px-1.5 py-0.5 text-xs"
-                                    {...props}
-                                  >
-                                    {children}
-                                  </code>
+                                  <div className="relative group my-3">
+                                    <div className="flex items-center justify-between rounded-t-lg bg-[#282c34] px-4 py-1.5 text-xs text-gray-400">
+                                      <span>{match[1]}</span>
+                                      <button onClick={() => copyCode(code, blockId)} className="text-xs text-gray-400 hover:text-white transition">
+                                        {copiedBlock === blockId ? "Copied!" : "Copy"}
+                                      </button>
+                                    </div>
+                                    <SyntaxHighlighter style={oneDark} language={match[1]} PreTag="div" customStyle={{ margin: 0, borderRadius: "0 0 0.5rem 0.5rem" }}>
+                                      {code}
+                                    </SyntaxHighlighter>
+                                  </div>
                                 );
-                              },
-                            }}
-                          >
+                              }
+                              return <code className="rounded bg-muted px-1.5 py-0.5 text-xs" {...props}>{children}</code>;
+                            },
+                          }}>
                             {getMessageText(message)}
                           </ReactMarkdown>
                         </div>
                       ) : (
-                        <p className="whitespace-pre-wrap">
-                          {getMessageText(message)}
-                        </p>
+                        <p className="whitespace-pre-wrap">{getMessageText(message)}</p>
                       )}
                     </div>
                   </motion.div>
                 ))}
               </AnimatePresence>
 
-              {isLoading &&
-                messages[messages.length - 1]?.role === "user" &&
-                !error && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="flex justify-start"
-                  >
-                    <div className="flex items-center gap-2 rounded-2xl bg-card border border-border px-4 py-3 text-sm text-muted-foreground">
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      Thinking...
-                    </div>
-                  </motion.div>
-                )}
+              {isLoading && messages[messages.length - 1]?.role === "user" && !error && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-start">
+                  <div className="flex items-center gap-2 rounded-2xl bg-card border border-border px-4 py-3 text-sm text-muted-foreground">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" /> Thinking...
+                  </div>
+                </motion.div>
+              )}
 
               {error && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="flex justify-center"
-                >
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-center">
                   <div className="rounded-xl border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive max-w-md text-center">
                     Failed to get response. Please try again.
                   </div>
                 </motion.div>
               )}
-
               <div ref={bottomRef} />
             </div>
           </div>
         )}
       </div>
 
-      {inputElement}
+      <div className="border-t border-border p-4">
+        <form onSubmit={handleSubmit} className="mx-auto flex max-w-3xl items-end gap-2">
+          <div className="flex-1">
+            <textarea
+              ref={textareaRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSubmit(e); } }}
+              placeholder="Send a message..."
+              rows={1}
+              className="w-full resize-none rounded-xl bg-card px-4 py-3 text-sm outline-none border border-border focus:border-primary/50 transition placeholder:text-muted-foreground/60"
+            />
+          </div>
+          <ModelSelector />
+          <button type="submit" disabled={isLoading || !input.trim()} className="glow rounded-xl bg-primary p-3 text-primary-foreground hover:bg-primary/90 transition disabled:opacity-40">
+            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+          </button>
+        </form>
+      </div>
     </div>
   );
+}
+
+// ─── Main ChatArea Router ───
+export function ChatArea() {
+  const params = useParams();
+  const conversationId = params?.id as string | undefined;
+
+  if (!conversationId) {
+    return <WelcomeScreen />;
+  }
+
+  return <ChatView conversationId={conversationId} />;
 }
