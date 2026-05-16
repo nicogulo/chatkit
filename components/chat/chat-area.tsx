@@ -11,8 +11,9 @@ import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { motion, AnimatePresence } from "framer-motion";
 import { useChatStore } from "@/lib/store/chat-store";
-import { getMessages } from "@/lib/actions/conversations";
+import { getMessages, createConversation } from "@/lib/actions/conversations";
 import { ModelSelector } from "./model-selector";
+import { useRouter } from "next/navigation";
 
 /** Extract text from UIMessage parts (AI SDK v6) */
 function getMessageText(message: { parts: Array<{ type: string; text?: string }> }): string {
@@ -75,6 +76,7 @@ function MessageSkeleton({ count = 3 }: { count?: number }) {
 
 export function ChatArea() {
   const params = useParams();
+  const router = useRouter();
   const conversationId = params?.id as string | undefined;
   const { sidebarOpen, toggleSidebar, selectedModel } = useChatStore();
   const [input, setInput] = useState("");
@@ -148,13 +150,34 @@ export function ChatArea() {
   }, [input]);
 
   const handleSubmit = useCallback(
-    (e: React.FormEvent) => {
+    async (e: React.FormEvent) => {
       e.preventDefault();
       if (!input.trim() || isLoading) return;
-      sendMessage({ text: input });
+
+      // If no conversation yet, create one first
+      if (!conversationId) {
+        try {
+          const result = await createConversation(input.trim().slice(0, 60));
+          if (result && "id" in result) {
+            // Navigate to new conversation, then send message
+            const newId = result.id;
+            setHistoryLoaded(newId);
+            router.push(`/chat/${newId}`);
+            // Small delay to let URL update before sending
+            setTimeout(() => sendMessage({ text: input.trim() }), 100);
+            setInput("");
+            return;
+          }
+        } catch (err) {
+          console.error("[Create conversation failed]", err);
+          return;
+        }
+      }
+
+      sendMessage({ text: input.trim() });
       setInput("");
     },
-    [input, isLoading, sendMessage]
+    [input, isLoading, sendMessage, conversationId, router, setHistoryLoaded]
   );
 
   const handleKeyDown = (e: React.KeyboardEvent) => {

@@ -108,42 +108,10 @@ export function ChatSidebar() {
     groups[label].push(c);
   }
 
-  // ✅ OPTIMISTIC: New chat — instant navigate, API in background
+  // ✅ New chat — navigate to empty state instantly
   const handleNew = async () => {
-    const tempId = `temp-${Date.now()}`;
-    const now = new Date().toISOString();
-
-    // Optimistic: add temp conversation to list
-    const tempConvo: Conversation = {
-      id: tempId,
-      user_id: "",
-      title: "New Chat",
-      model: "glm-4.7-flash",
-      system_prompt: null,
-      created_at: now,
-      updated_at: now,
-    };
-    setConversations([tempConvo, ...conversations]);
-    setActiveConversationId(tempId);
-    router.push(`/chat/${tempId}`);
-
-    // Background API call
-    try {
-      const result = await createConversation();
-      if (result && "id" in result) {
-        // Replace temp with real
-        setConversations((prev) =>
-          prev.map((c) => (c.id === tempId ? { ...c, id: result.id } : c))
-        );
-        setActiveConversationId(result.id);
-        router.replace(`/chat/${result.id}`);
-      }
-    } catch {
-      // Rollback on failure
-      setConversations((prev) => prev.filter((c) => c.id !== tempId));
-      setActiveConversationId(null);
-      router.push("/chat");
-    }
+    setActiveConversationId(null);
+    router.push("/chat");
   };
 
   // ✅ OPTIMISTIC: Rename — instant update title, API in background
