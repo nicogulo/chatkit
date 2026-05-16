@@ -3,7 +3,7 @@
 import { useChat, type UIMessage } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Send, Loader2, PanelLeft, Sparkles } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -75,8 +75,8 @@ function WelcomeScreen() {
           created_at: now,
           updated_at: now,
         }, ...conversations]);
-        // Navigate with message as URL param so ChatView can auto-send
-        window.location.href = `/chat/${result.id}?send=${encodeURIComponent(text)}`;
+        // Soft navigate — no page reload
+        router.push(`/chat/${result.id}?send=${encodeURIComponent(text)}`);
       }
     } catch {
       setSending(false);
@@ -135,6 +135,7 @@ function WelcomeScreen() {
 function ChatView({ conversationId }: { conversationId: string }) {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { sidebarOpen, toggleSidebar, selectedModel, setConversations, conversations } = useChatStore();
   const [input, setInput] = useState("");
   const [copiedBlock, setCopiedBlock] = useState<string | null>(null);
@@ -176,10 +177,10 @@ function ChatView({ conversationId }: { conversationId: string }) {
       setLoadingHistory(false);
 
       // Auto-send message from welcome screen (?send=...)
-      const sendParam = new URLSearchParams(window.location.search).get("send");
+      const sendParam = searchParams.get("send");
       if (sendParam) {
         // Clean URL
-        window.history.replaceState({}, '', `/chat/${conversationId}`);
+        router.replace(`/chat/${conversationId}`);
         // Send after a short delay to let useChat initialize
         setTimeout(() => sendMessage({ text: sendParam }), 300);
       }
