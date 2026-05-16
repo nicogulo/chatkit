@@ -108,7 +108,9 @@ export function ChatArea() {
   // Load chat history when navigating to a conversation
   useEffect(() => {
     if (!conversationId || conversationId.startsWith("temp-")) {
-      setHistoryLoaded(null);
+      // New chat — clear messages immediately
+      setMessages([]);
+      setHistoryLoaded(conversationId ?? null);
       return;
     }
     if (historyLoaded === conversationId) return;
@@ -121,6 +123,8 @@ export function ChatArea() {
       if (data && data.length > 0) {
         const uiMsgs = dbMessagesToUIMessages(data as Array<{ role: string; content: string; created_at: string }>);
         setMessages(uiMsgs);
+      } else {
+        setMessages([]);
       }
       setHistoryLoaded(conversationId);
       setLoadingHistory(false);
@@ -128,11 +132,6 @@ export function ChatArea() {
 
     return () => { cancelled = true; };
   }, [conversationId, historyLoaded, setMessages]);
-
-  // Reset history loaded when conversation changes
-  useEffect(() => {
-    setHistoryLoaded(null);
-  }, [conversationId]);
 
   // Auto-scroll
   useEffect(() => {
