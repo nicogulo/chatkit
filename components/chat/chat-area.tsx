@@ -37,9 +37,12 @@ export function ChatArea() {
     [selectedModel, conversationId]
   );
 
-  const { messages, sendMessage, status } = useChat({
+  const { messages, sendMessage, status, error } = useChat({
     id: conversationId ?? "new",
     transport,
+    onError: (err) => {
+      console.error("[Chat Error]", err);
+    },
   });
 
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -242,7 +245,8 @@ export function ChatArea() {
           </AnimatePresence>
 
           {isLoading &&
-            messages[messages.length - 1]?.role === "user" && (
+            messages[messages.length - 1]?.role === "user" &&
+            !error && (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -254,6 +258,18 @@ export function ChatArea() {
                 </div>
               </motion.div>
             )}
+
+          {error && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="flex justify-center"
+            >
+              <div className="rounded-xl border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive max-w-md text-center">
+                Failed to get response. Please try again.
+              </div>
+            </motion.div>
+          )}
 
           <div ref={bottomRef} />
         </div>

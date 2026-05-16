@@ -98,11 +98,23 @@ export async function POST(req: Request) {
       status: 200,
       stream: result.toUIMessageStream(),
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("[Chat API Error]", error);
+    
+    // Handle specific API errors
+    const message = error instanceof Error ? error.message : "Internal server error";
+    const isRateLimit = message.includes("Rate limit") || message.includes("429");
+    const isAuth = message.includes("Unauthorized") || message.includes("401");
+    
     return new Response(
-      JSON.stringify({ error: "Internal server error" }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+      JSON.stringify({ 
+        error: isRateLimit 
+          ? "AI API rate limit reached. Please wait a moment and try again."
+          : isAuth
+          ? "AI API authentication failed. Check ZAI_API_KEY."
+          : message
+      }),
+      { status: isRateLimit ? 429 : 500, headers: { "Content-Type": "application/json" } }
     );
   }
 }
