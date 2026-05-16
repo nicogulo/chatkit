@@ -1,4 +1,4 @@
-import { streamText } from "ai";
+import { streamText, convertToModelMessages, createUIMessageStreamResponse } from "ai";
 import { getModel, DEFAULT_MODEL } from "@/lib/ai";
 import { createClient } from "@/lib/supabase/server";
 import { canSendMessage, recordUsage } from "@/lib/actions/usage";
@@ -27,34 +27,47 @@ export async function POST(req: Request) {
       );
     }
 
-    const { messages, model: modelId, conversationId } = await req.json();
+    const body = await req.json();
+    const { messages: uiMessages, model: modelId, conversationId } = body;
     const selectedModel = (modelId as ModelId) ?? DEFAULT_MODEL;
 
-    // Save user message to DB
-    if (conversationId && messages.length > 0) {
-      const lastMsg = messages[messages.length - 1];
-      if (lastMsg.role === "user") {
-        await supabase.from("messages").insert({
-          conversation_id: conversationId,
-          role: "user",
-          content: lastMsg.content,
-          model: selectedModel,
-        });
+    // Convert UI messages (parts-based) to model messages (content-based)
+    const modelMessages = await convertToModelMessages(uiMessages);
 
-        // Auto-title from first message
-        if (messages.length === 1) {
-          const title = lastMsg.content.slice(0, 60) + (lastMsg.content.length > 60 ? "…" : "");
-          await supabase
-            .from("conversations")
-            .update({ title })
-            .eq("id", conversationId);
-        }
+    // Save user message to DB (background, non-blocking)
+    if (conversationId && uiMessages?.length > 0) {
+      const lastMsg = uiMessages[uiMessages.length - 1];
+      if (lastMsg.role === "user") {
+        const userText = lastMsg.parts
+          ?.filter((p: { type: string }) => p.type === "text")
+          ?.map((p: { text: string }) => p.text)
+          ?.join("") ?? "";
+
+        supabase
+          .from("messages")
+          .insert({
+            conversation_id: conversationId,
+            role: "user",
+            content: userText,
+            model: selectedModel,
+          })
+          .then(() => {
+            // Auto-title from first message
+            if (uiMessages.length === 1 && userText) {
+              const title = userText.slice(0, 60) + (userText.length > 60 ? "…" : "");
+              supabase
+                .from("conversations")
+                .update({ title })
+                .eq("id", conversationId);
+            }
+          });
       }
     }
 
+    // Stream AI response
     const result = streamText({
       model: getModel(selectedModel),
-      messages,
+      messages: modelMessages,
       onFinish: async ({ usage, text }) => {
         // Save assistant message to DB
         if (conversationId) {
@@ -67,7 +80,6 @@ export async function POST(req: Request) {
             model: selectedModel,
           });
 
-          // Update conversation timestamp
           await supabase
             .from("conversations")
             .update({ updated_at: new Date().toISOString() })
@@ -82,7 +94,10 @@ export async function POST(req: Request) {
       },
     });
 
-    return result.toTextStreamResponse();
+    return createUIMessageStreamResponse({
+      status: 200,
+      stream: result.toUIMessageStream(),
+    });
   } catch (error) {
     console.error("[Chat API Error]", error);
     return new Response(

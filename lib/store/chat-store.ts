@@ -9,7 +9,7 @@ interface ChatState {
 
   // Conversations
   conversations: Conversation[];
-  setConversations: (convos: Conversation[]) => void;
+  setConversations: (convos: Conversation[] | ((prev: Conversation[]) => Conversation[])) => void;
   activeConversationId: string | null;
   setActiveConversationId: (id: string | null) => void;
 
@@ -28,7 +28,10 @@ export const useChatStore = create<ChatState>((set) => ({
   setSidebarOpen: (open) => set({ sidebarOpen: open }),
 
   conversations: [],
-  setConversations: (convos) => set({ conversations: convos }),
+  setConversations: (input) =>
+    set((state) => ({
+      conversations: typeof input === "function" ? input(state.conversations) : input,
+    })),
   activeConversationId: null,
   setActiveConversationId: (id) => set({ activeConversationId: id }),
 

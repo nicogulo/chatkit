@@ -11,7 +11,6 @@ import {
   Check,
   Search,
   PanelLeftClose,
-  PanelLeft,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -81,29 +80,85 @@ export function ChatSidebar() {
     groups[label].push(c);
   }
 
+  // ✅ OPTIMISTIC: New chat — instant navigate, API in background
   const handleNew = async () => {
-    const result = await createConversation();
-    if (result && "id" in result) {
-      setActiveConversationId(result.id);
-      router.push(`/chat/${result.id}`);
-      loadConversations();
+    const tempId = `temp-${Date.now()}`;
+    const now = new Date().toISOString();
+
+    // Optimistic: add temp conversation to list
+    const tempConvo: Conversation = {
+      id: tempId,
+      user_id: "",
+      title: "New Chat",
+      model: "glm-4.7-flash",
+      system_prompt: null,
+      created_at: now,
+      updated_at: now,
+    };
+    setConversations([tempConvo, ...conversations]);
+    setActiveConversationId(tempId);
+    router.push(`/chat/${tempId}`);
+
+    // Background API call
+    try {
+      const result = await createConversation();
+      if (result && "id" in result) {
+        // Replace temp with real
+        setConversations((prev) =>
+          prev.map((c) => (c.id === tempId ? { ...c, id: result.id } : c))
+        );
+        setActiveConversationId(result.id);
+        router.replace(`/chat/${result.id}`);
+      }
+    } catch {
+      // Rollback on failure
+      setConversations((prev) => prev.filter((c) => c.id !== tempId));
+      setActiveConversationId(null);
+      router.push("/chat");
     }
   };
 
+  // ✅ OPTIMISTIC: Rename — instant update title, API in background
   const handleRename = async (id: string) => {
     if (!editTitle.trim()) return;
-    await renameConversation(id, editTitle.trim());
+    const oldTitle = conversations.find((c) => c.id === id)?.title;
     setEditingId(null);
-    loadConversations();
+
+    // Optimistic
+    setConversations((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, title: editTitle.trim() } : c))
+    );
+
+    try {
+      await renameConversation(id, editTitle.trim());
+    } catch {
+      // Rollback
+      if (oldTitle) {
+        setConversations((prev) =>
+          prev.map((c) => (c.id === id ? { ...c, title: oldTitle } : c))
+        );
+      }
+    }
   };
 
+  // ✅ OPTIMISTIC: Delete — instant remove, API in background
   const handleDelete = async (id: string) => {
-    await deleteConversation(id);
     setDeleteConfirm(null);
-    loadConversations();
-    if (activeConversationId === id) {
+    const wasActive = activeConversationId === id;
+
+    // Optimistic: remove from list
+    setConversations((prev) => prev.filter((c) => c.id !== id));
+    if (wasActive) {
       setActiveConversationId(null);
       router.push("/chat");
+    }
+
+    // Background API call
+    try {
+      await deleteConversation(id);
+    } catch {
+      // Rollback by reloading
+      loadConversations();
     }
   };
 
