@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import { TypewriterText, TypingChatBubble } from "./animations";
+import { LogoMarquee } from "./logo-marquee";
 
 export function HeroSection() {
   return (
@@ -24,6 +26,7 @@ export function HeroSection() {
         transition={{ duration: 0.6, delay: 0.1 }}
         className="mx-auto max-w-4xl text-5xl font-bold tracking-tight sm:text-6xl lg:text-7xl"
       >
+        Build your{" "}
         <span className="gradient-text">
           <TypewriterText
             texts={["AI Chat product", "SaaS in a weekend", "next unicorn", "revenue machine"]}
@@ -67,35 +70,9 @@ export function HeroSection() {
         </Link>
       </motion.div>
 
-      {/* Company logos */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.6, delay: 0.5 }}
-        className="mt-16"
-      >
-        <p className="mb-6 text-xs font-medium uppercase tracking-widest text-muted-foreground/60">
-          Trusted by developers at
-        </p>
-        <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-4">
-          <CompanyLogo name="Vercel" />
-          <CompanyLogo name="Supabase" />
-          <CompanyLogo name="Stripe" />
-          <CompanyLogo name="GitHub" />
-          <CompanyLogo name="Figma" />
-          <CompanyLogo name="Notion" />
-        </div>
-      </motion.div>
+      {/* Company logos marquee */}
+      <LogoMarquee />
     </section>
-  );
-}
-
-/** Monochrome company logo placeholder */
-function CompanyLogo({ name }: { name: string }) {
-  return (
-    <span className="text-lg font-bold tracking-tight text-muted-foreground/40 transition hover:text-muted-foreground/70 select-none">
-      {name}
-    </span>
   );
 }
 
@@ -150,5 +127,3 @@ function LoopingChatBubble() {
     />
   );
 }
-
-import { useState } from "react";
