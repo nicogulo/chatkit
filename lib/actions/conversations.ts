@@ -69,6 +69,9 @@ export async function deleteConversation(id: string) {
   } = await supabase.auth.getUser();
   if (!user) return { error: "Unauthorized" };
 
+  // Skip temp IDs (not yet saved to DB)
+  if (id.startsWith("temp-")) return { success: true };
+
   // Delete messages first (cascade should handle this, but be safe)
   await supabase.from("messages").delete().eq("conversation_id", id);
   const { error } = await supabase
@@ -79,4 +82,24 @@ export async function deleteConversation(id: string) {
 
   if (error) return { error: error.message };
   return { success: true };
+}
+
+export async function getMessages(conversationId: string) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  // Skip temp IDs
+  if (conversationId.startsWith("temp-")) return [];
+
+  const { data } = await supabase
+    .from("messages")
+    .select("role, content, model, created_at")
+    .eq("conversation_id", conversationId)
+    .order("created_at", { ascending: true });
+
+  return data ?? [];
 }
