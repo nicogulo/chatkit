@@ -11,8 +11,9 @@ import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { motion, AnimatePresence } from "framer-motion";
 import { useChatStore } from "@/lib/store/chat-store";
-import { getMessages } from "@/lib/actions/conversations";
+import { getMessages, createConversation } from "@/lib/actions/conversations";
 import { ModelSelector } from "./model-selector";
+import { useRouter } from "next/navigation";
 
 /** Extract text from UIMessage parts (AI SDK v6) */
 function getMessageText(message: { parts: Array<{ type: string; text?: string }> }): string {
@@ -75,12 +76,14 @@ function MessageSkeleton({ count = 3 }: { count?: number }) {
 
 export function ChatArea() {
   const params = useParams();
+  const router = useRouter();
   const conversationId = params?.id as string | undefined;
-  const { sidebarOpen, toggleSidebar, selectedModel } = useChatStore();
+  const { sidebarOpen, toggleSidebar, selectedModel, setConversations, conversations } = useChatStore();
   const [input, setInput] = useState("");
   const [copiedBlock, setCopiedBlock] = useState<string | null>(null);
   const [historyLoaded, setHistoryLoaded] = useState<string | null>(null);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [pendingMsg, setPendingMsg] = useState<string | null>(null);
 
   const transport = useMemo(
     () =>
@@ -103,7 +106,7 @@ export function ChatArea() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const isLoading = status === "submitted" || status === "streaming";
+  const isLoading = status === "submitted" || status === "streaming" || !!pendingMsg;
 
   // Load chat history when navigating to a conversation
   useEffect(() => {
@@ -133,6 +136,16 @@ export function ChatArea() {
     return () => { cancelled = true; };
   }, [conversationId, historyLoaded, setMessages]);
 
+  // Send pending message after navigating from /chat to /chat/{id}
+  useEffect(() => {
+    if (pendingMsg && conversationId && !conversationId.startsWith("temp-")) {
+      const msg = pendingMsg;
+      setPendingMsg(null);
+      const timer = setTimeout(() => sendMessage({ text: msg }), 200);
+      return () => clearTimeout(timer);
+    }
+  }, [pendingMsg, conversationId, sendMessage]);
+
   // Auto-scroll
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -148,13 +161,53 @@ export function ChatArea() {
   }, [input]);
 
   const handleSubmit = useCallback(
-    (e: React.FormEvent) => {
+    async (e: React.FormEvent) => {
       e.preventDefault();
-      if (!input.trim() || isLoading || !conversationId) return;
-      sendMessage({ text: input.trim() });
+      if (!input.trim() || isLoading) return;
+
+      const messageText = input.trim();
       setInput("");
+
+      // Case 1: No conversation yet (/chat) — create one then send
+      if (!conversationId) {
+        try {
+          const result = await createConversation(messageText.slice(0, 60));
+          if (result && "id" in result) {
+            // Update sidebar
+            const now = new Date().toISOString();
+            setConversations([{
+              id: result.id,
+              user_id: "",
+              title: messageText.slice(0, 60),
+              model: "glm-4.5-air",
+              system_prompt: null,
+              created_at: now,
+              updated_at: now,
+            }, ...conversations]);
+            // Navigate to new conversation — message will be sent via pendingMsg
+            setPendingMsg(messageText);
+            router.push(`/chat/${result.id}`);
+          }
+        } catch (err) {
+          console.error("[Create conversation failed]", err);
+          setInput(messageText);
+        }
+        return;
+      }
+
+      // Case 2: Existing conversation — just send
+      sendMessage({ text: messageText });
+
+      // Update sidebar title from first message if still "New Chat"
+      const currentConvo = conversations.find((c) => c.id === conversationId);
+      if (currentConvo && (currentConvo.title === "New Chat" || currentConvo.title.startsWith("temp"))) {
+        const title = messageText.slice(0, 60) + (messageText.length > 60 ? "…" : "");
+        setConversations((prev: import("@/types").Conversation[]) =>
+          prev.map((c: import("@/types").Conversation) => c.id === conversationId ? { ...c, title } : c)
+        );
+      }
     },
-    [input, isLoading, sendMessage, conversationId]
+    [input, isLoading, sendMessage, conversationId, router, setConversations, conversations]
   );
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
