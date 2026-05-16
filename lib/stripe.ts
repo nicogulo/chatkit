@@ -13,7 +13,7 @@ export const PLANS = {
   free: {
     name: "Free",
     price: 0,
-    messagesPerDay: 10,
+    messagesPerDay: 20,
   },
   pro: {
     name: "Pro",
