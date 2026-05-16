@@ -7,6 +7,7 @@ import {
   MessageSquare,
   Pencil,
   Trash2,
+  MoreHorizontal,
   X,
   Check,
   Search,
@@ -46,6 +47,7 @@ export function ChatSidebar() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [contextMenuId, setContextMenuId] = useState<string | null>(null);
   const editInputRef = useRef<HTMLInputElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
@@ -71,6 +73,7 @@ export function ChatSidebar() {
     const handler = (e: MouseEvent) => {
       if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node))
         setUserMenuOpen(false);
+      setContextMenuId(null);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -332,37 +335,49 @@ export function ChatSidebar() {
                   ) : (
                     <>
                       <span className="flex-1 truncate text-xs">{c.title}</span>
-                      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition">
+                      <div className="relative opacity-0 group-hover:opacity-100 transition">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            startEditing(c);
+                            setContextMenuId(contextMenuId === c.id ? null : c.id);
                           }}
                           className="rounded p-0.5 text-muted-foreground hover:text-foreground"
                         >
-                          <Pencil className="h-3 w-3" />
+                          <MoreHorizontal className="h-3.5 w-3.5" />
                         </button>
-                        {deletingId === c.id ? (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDelete(c.id);
-                            }}
-                            className="rounded p-0.5 text-destructive hover:text-destructive/80"
-                          >
-                            <Check className="h-3 w-3" />
-                          </button>
-                        ) : (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDelete(c.id);
-                            }}
-                            className="rounded p-0.5 text-muted-foreground hover:text-destructive"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </button>
-                        )}
+                        <AnimatePresence>
+                          {contextMenuId === c.id && (
+                            <motion.div
+                              initial={{ opacity: 0, scale: 0.95 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              exit={{ opacity: 0, scale: 0.95 }}
+                              transition={{ duration: 0.1 }}
+                              className="absolute right-0 top-full z-50 mt-1 w-40 rounded-lg border border-border/50 bg-card p-1 shadow-xl"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <button
+                                onClick={() => {
+                                  setContextMenuId(null);
+                                  startEditing(c);
+                                }}
+                                className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-xs text-muted-foreground hover:bg-muted/50 hover:text-foreground transition"
+                              >
+                                <Pencil className="h-3 w-3" />
+                                Rename
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setContextMenuId(null);
+                                  handleDelete(c.id);
+                                }}
+                                className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-xs text-destructive hover:bg-destructive/5 transition"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                                {deletingId === c.id ? "Confirm Delete" : "Delete"}
+                              </button>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </div>
                     </>
                   )}
