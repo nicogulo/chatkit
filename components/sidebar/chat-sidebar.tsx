@@ -44,10 +44,9 @@ export function ChatSidebar() {
 
   const [search, setSearch] = useState("");
   const [editTitle, setEditTitle] = useState("");
-  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [contextMenuId, setContextMenuId] = useState<string | null>(null);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [contextMenuId, setContextMenuId] = useState<string | null>(null);
   const editInputRef = useRef<HTMLInputElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
@@ -170,34 +169,25 @@ export function ChatSidebar() {
     }
   };
 
-  // ✅ OPTIMISTIC: Delete — instant remove with single click + visual confirm
+  // ✅ OPTIMISTIC: Delete — instant remove
   const handleDelete = async (id: string) => {
-    // If already in delete-confirm state, do the delete
-    if (deletingId === id) {
-      setDeletingId(null);
-      const wasActive = activeConversationId === id;
+    setContextMenuId(null);
+    const wasActive = activeConversationId === id;
 
-      // Optimistic: remove from list
-      setConversations((prev) => prev.filter((c) => c.id !== id));
-      if (wasActive) {
-        setActiveConversationId(null);
-        router.push("/chat");
-      }
-
-      // Background API call
-      try {
-        await deleteConversation(id);
-      } catch {
-        // Rollback by reloading
-        loadConversations();
-      }
-      return;
+    // Optimistic: remove from list
+    setConversations((prev) => prev.filter((c) => c.id !== id));
+    if (wasActive) {
+      setActiveConversationId(null);
+      router.push("/chat");
     }
 
-    // First click: show confirm state
-    setDeletingId(id);
-    // Auto-cancel after 3 seconds
-    setTimeout(() => setDeletingId((prev) => (prev === id ? null : prev)), 3000);
+    // Background API call
+    try {
+      await deleteConversation(id);
+    } catch {
+      // Rollback by reloading
+      loadConversations();
+    }
   };
 
   const startEditing = (c: Conversation) => {
@@ -373,7 +363,7 @@ export function ChatSidebar() {
                                 className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-xs text-destructive hover:bg-destructive/5 transition"
                               >
                                 <Trash2 className="h-3 w-3" />
-                                {deletingId === c.id ? "Confirm Delete" : "Delete"}
+                                Delete
                               </button>
                             </motion.div>
                           )}
