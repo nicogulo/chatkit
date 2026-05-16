@@ -2,7 +2,7 @@
 
 export type Plan = "free" | "pro" | "enterprise";
 export type MessageRole = "user" | "assistant" | "system";
-export type ModelId = "glm-5" | "glm-4.7" | "glm-4.7-flash";
+export type ModelId = "glm-5" | "glm-4.7" | "glm-4.7-flash" | "glm-4.5-air";
 export type SubscriptionStatus =
   | "active"
   | "canceled"
@@ -70,9 +70,15 @@ export interface ModelConfig {
 
 export const MODELS: ModelConfig[] = [
   {
+    id: "glm-4.5-air",
+    name: "GLM-4.5 Air",
+    description: "Fastest responses",
+    minPlan: "free",
+  },
+  {
     id: "glm-4.7",
     name: "GLM-4.7",
-    description: "Balanced & stable (recommended)",
+    description: "Balanced & stable",
     minPlan: "free",
   },
   {

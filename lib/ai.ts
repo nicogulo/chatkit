@@ -15,4 +15,4 @@ export function getModel(modelId: ModelId) {
   return zai.chat(modelId);
 }
 
-export const DEFAULT_MODEL: ModelId = "glm-4.7";
+export const DEFAULT_MODEL: ModelId = "glm-4.5-air";

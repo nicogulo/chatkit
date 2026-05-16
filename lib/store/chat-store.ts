@@ -35,7 +35,7 @@ export const useChatStore = create<ChatState>((set) => ({
   activeConversationId: null,
   setActiveConversationId: (id) => set({ activeConversationId: id }),
 
-  selectedModel: "glm-4.7-flash",
+  selectedModel: "glm-4.5-air",
   setSelectedModel: (model) => set({ selectedModel: model }),
 
   editingId: null,

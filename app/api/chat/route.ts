@@ -68,6 +68,7 @@ export async function POST(req: Request) {
     const result = streamText({
       model: getModel(selectedModel),
       messages: modelMessages,
+      maxOutputTokens: 4096,
       abortSignal: AbortSignal.timeout(30000), // 30s timeout — prevent infinite hang
       onFinish: async ({ usage, text }) => {
         // Save assistant message to DB

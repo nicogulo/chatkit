@@ -34,6 +34,7 @@ export function ChatArea() {
         api: "/api/chat",
         body: { model: selectedModel, conversationId },
       }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [selectedModel, conversationId]
   );
 
