@@ -83,6 +83,7 @@ export function ChatArea() {
   const [copiedBlock, setCopiedBlock] = useState<string | null>(null);
   const [historyLoaded, setHistoryLoaded] = useState<string | null>(null);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [pendingMessage, setPendingMessage] = useState<string | null>(null);
 
   const transport = useMemo(
     () =>
@@ -105,7 +106,7 @@ export function ChatArea() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const isLoading = status === "submitted" || status === "streaming";
+  const isLoading = status === "submitted" || status === "streaming" || !!pendingMessage;
 
   // Load chat history when navigating to a conversation
   useEffect(() => {
@@ -135,6 +136,17 @@ export function ChatArea() {
     return () => { cancelled = true; };
   }, [conversationId, historyLoaded, setMessages]);
 
+  // Send pending message after navigation to new conversation
+  useEffect(() => {
+    if (pendingMessage && conversationId && !conversationId.startsWith("temp-")) {
+      const msg = pendingMessage;
+      setPendingMessage(null);
+      // Small delay to let useChat initialize with new ID
+      const timer = setTimeout(() => sendMessage({ text: msg }), 150);
+      return () => clearTimeout(timer);
+    }
+  }, [pendingMessage, conversationId, sendMessage]);
+
   // Auto-scroll
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -154,28 +166,30 @@ export function ChatArea() {
       e.preventDefault();
       if (!input.trim() || isLoading) return;
 
+      const messageText = input.trim();
+      setInput("");
+
       // If no conversation yet, create one first
       if (!conversationId) {
         try {
-          const result = await createConversation(input.trim().slice(0, 60));
+          setPendingMessage(messageText);
+          const result = await createConversation(messageText.slice(0, 60));
           if (result && "id" in result) {
-            // Navigate to new conversation, then send message
-            const newId = result.id;
-            setHistoryLoaded(newId);
-            router.push(`/chat/${newId}`);
-            // Small delay to let URL update before sending
-            setTimeout(() => sendMessage({ text: input.trim() }), 100);
-            setInput("");
-            return;
+            setHistoryLoaded(result.id);
+            router.push(`/chat/${result.id}`);
+          } else {
+            setPendingMessage(null);
+            setInput(messageText);
           }
         } catch (err) {
           console.error("[Create conversation failed]", err);
-          return;
+          setPendingMessage(null);
+          setInput(messageText);
         }
+        return;
       }
 
-      sendMessage({ text: input.trim() });
-      setInput("");
+      sendMessage({ text: messageText });
     },
     [input, isLoading, sendMessage, conversationId, router, setHistoryLoaded]
   );
