@@ -8,7 +8,6 @@ export const maxDuration = 60;
 
 export async function POST(req: Request) {
   try {
-    // Auth check
     const supabase = await createClient();
     const {
       data: { user },
@@ -18,7 +17,6 @@ export async function POST(req: Request) {
       return new Response("Unauthorized", { status: 401 });
     }
 
-    // Usage limit check
     const canSend = await canSendMessage();
     if (!canSend) {
       return new Response(
@@ -29,16 +27,53 @@ export async function POST(req: Request) {
       );
     }
 
-    // Parse request
-    const { messages, model: modelId } = await req.json();
+    const { messages, model: modelId, conversationId } = await req.json();
     const selectedModel = (modelId as ModelId) ?? DEFAULT_MODEL;
 
-    // Stream AI response
+    // Save user message to DB
+    if (conversationId && messages.length > 0) {
+      const lastMsg = messages[messages.length - 1];
+      if (lastMsg.role === "user") {
+        await supabase.from("messages").insert({
+          conversation_id: conversationId,
+          role: "user",
+          content: lastMsg.content,
+          model: selectedModel,
+        });
+
+        // Auto-title from first message
+        if (messages.length === 1) {
+          const title = lastMsg.content.slice(0, 60) + (lastMsg.content.length > 60 ? "…" : "");
+          await supabase
+            .from("conversations")
+            .update({ title })
+            .eq("id", conversationId);
+        }
+      }
+    }
+
     const result = streamText({
       model: getModel(selectedModel),
       messages,
-      onFinish: async ({ usage }) => {
-        // Save usage asynchronously (non-blocking)
+      onFinish: async ({ usage, text }) => {
+        // Save assistant message to DB
+        if (conversationId) {
+          await supabase.from("messages").insert({
+            conversation_id: conversationId,
+            role: "assistant",
+            content: text,
+            tokens_input: usage.inputTokens ?? 0,
+            tokens_output: usage.outputTokens ?? 0,
+            model: selectedModel,
+          });
+
+          // Update conversation timestamp
+          await supabase
+            .from("conversations")
+            .update({ updated_at: new Date().toISOString() })
+            .eq("id", conversationId);
+        }
+
         await recordUsage(
           selectedModel,
           usage.inputTokens ?? 0,

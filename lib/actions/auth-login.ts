@@ -18,23 +18,6 @@ export async function loginWithEmail(email: string, password: string) {
   redirect("/chat");
 }
 
-export async function loginWithGoogle() {
-  const supabase = await createClient();
-
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: "google",
-    options: {
-      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`,
-    },
-  });
-
-  if (error) {
-    return { error: error.message };
-  }
-
-  redirect(data.url);
-}
-
 export async function loginWithGitHub() {
   const supabase = await createClient();
 

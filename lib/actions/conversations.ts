@@ -20,7 +20,7 @@ export async function getConversations() {
   return data ?? [];
 }
 
-export async function createConversation(title?: string, model: string = "gpt-4o-mini") {
+export async function createConversation(title?: string, model: string = "glm-4.7-flash") {
   const supabase = await createClient();
 
   const {
@@ -40,7 +40,7 @@ export async function createConversation(title?: string, model: string = "gpt-4o
 
   if (error || !data) return { error: error?.message ?? "Failed to create conversation" };
 
-  redirect(`/chat/${data.id}`);
+  return { id: data.id };
 }
 
 export async function renameConversation(id: string, title: string) {

@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
-
+// /chat — new chat (no conversation selected)
+// The ChatArea component handles the empty state
 export default function ChatPage() {
-  redirect("/chat/new");
+  return null;
 }

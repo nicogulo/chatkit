@@ -1,10 +1,5 @@
-import { ChatArea } from "@/components/chat/chat-area";
-
-export default async function ConversationPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = await params;
-  return <ChatArea conversationId={id} />;
+// /chat/[id] — specific conversation
+// ChatArea reads the ID from params and loads messages
+export default function ConversationPage() {
+  return null;
 }

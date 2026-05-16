@@ -2,11 +2,7 @@
 
 export type Plan = "free" | "pro" | "enterprise";
 export type MessageRole = "user" | "assistant" | "system";
-export type ModelId =
-  | "gpt-4o"
-  | "gpt-4o-mini"
-  | "claude-sonnet-4-20250514"
-  | "gemini-2.0-flash";
+export type ModelId = "glm-5" | "glm-4.7" | "glm-4.7-flash";
 export type SubscriptionStatus =
   | "active"
   | "canceled"
@@ -68,44 +64,33 @@ export interface Subscription {
 export interface ModelConfig {
   id: ModelId;
   name: string;
-  provider: "openai" | "anthropic" | "google";
   description: string;
   minPlan: Plan;
 }
 
 export const MODELS: ModelConfig[] = [
   {
-    id: "gpt-4o-mini",
-    name: "GPT-4o Mini",
-    provider: "openai",
-    description: "Fast & affordable",
+    id: "glm-4.7-flash",
+    name: "GLM-4.7 Flash",
+    description: "Fast & lightweight",
     minPlan: "free",
   },
   {
-    id: "gpt-4o",
-    name: "GPT-4o",
-    provider: "openai",
-    description: "Most capable OpenAI model",
-    minPlan: "pro",
-  },
-  {
-    id: "claude-sonnet-4-20250514",
-    name: "Claude Sonnet 4",
-    provider: "anthropic",
-    description: "Balanced speed & intelligence",
-    minPlan: "pro",
-  },
-  {
-    id: "gemini-2.0-flash",
-    name: "Gemini 2.0 Flash",
-    provider: "google",
-    description: "Fast multimodal by Google",
+    id: "glm-4.7",
+    name: "GLM-4.7",
+    description: "Balanced performance",
     minPlan: "free",
+  },
+  {
+    id: "glm-5",
+    name: "GLM-5",
+    description: "Most capable",
+    minPlan: "pro",
   },
 ];
 
 export const PLAN_LIMITS: Record<Plan, { messagesPerDay: number }> = {
-  free: { messagesPerDay: 10 },
+  free: { messagesPerDay: 20 },
   pro: { messagesPerDay: Infinity },
   enterprise: { messagesPerDay: Infinity },
 };

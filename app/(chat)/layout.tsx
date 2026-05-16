@@ -1,4 +1,5 @@
 import { ChatSidebar } from "@/components/sidebar/chat-sidebar";
+import { ChatArea } from "@/components/chat/chat-area";
 
 export default function ChatLayout({
   children,
@@ -8,7 +9,7 @@ export default function ChatLayout({
   return (
     <div className="flex h-screen bg-background">
       <ChatSidebar />
-      <main className="flex-1 overflow-hidden">{children}</main>
+      <ChatArea />
     </div>
   );
 }

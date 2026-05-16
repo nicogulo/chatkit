@@ -12,6 +12,7 @@
     "@ai-sdk/anthropic": "^3.0.77",
     "@ai-sdk/google": "^3.0.73",
     "@ai-sdk/openai": "^3.0.63",
+    "@ai-sdk/react": "^3.0.184",
     "@hookform/resolvers": "^5.2.2",
     "@stripe/stripe-js": "^9.5.0",
     "@supabase/ssr": "^0.10.3",
