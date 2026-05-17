@@ -1,5 +1,4 @@
--- ChatKit — Initial Database Migration
--- Run this in Supabase SQL Editor
+-- ChatKit — Initial Database Migration (idempotent — safe to re-run)
 
 -- ============================================================
 -- 1. PROFILES
@@ -9,12 +8,18 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   display_name TEXT,
   avatar_url TEXT,
   plan TEXT NOT NULL DEFAULT 'free' CHECK (plan IN ('free', 'pro', 'enterprise')),
+  role TEXT NOT NULL DEFAULT 'user' CHECK (role IN ('user', 'admin')),
+  banned BOOLEAN NOT NULL DEFAULT false,
   stripe_customer_id TEXT UNIQUE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view own profile" ON public.profiles;
+DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
+DROP POLICY IF EXISTS "Users can insert own profile" ON public.profiles;
 
 CREATE POLICY "Users can view own profile"
   ON public.profiles FOR SELECT
@@ -53,13 +58,18 @@ CREATE TABLE IF NOT EXISTS public.conversations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   title TEXT NOT NULL DEFAULT 'New Conversation',
-  model TEXT NOT NULL DEFAULT 'gpt-4o-mini',
+  model TEXT NOT NULL DEFAULT 'glm-4.5-air',
   system_prompt TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 ALTER TABLE public.conversations ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view own conversations" ON public.conversations;
+DROP POLICY IF EXISTS "Users can create own conversations" ON public.conversations;
+DROP POLICY IF EXISTS "Users can update own conversations" ON public.conversations;
+DROP POLICY IF EXISTS "Users can delete own conversations" ON public.conversations;
 
 CREATE POLICY "Users can view own conversations"
   ON public.conversations FOR SELECT
@@ -92,6 +102,10 @@ CREATE TABLE IF NOT EXISTS public.messages (
 );
 
 ALTER TABLE public.messages ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view messages in own conversations" ON public.messages;
+DROP POLICY IF EXISTS "Users can insert messages in own conversations" ON public.messages;
+DROP POLICY IF EXISTS "Users can delete messages in own conversations" ON public.messages;
 
 CREATE POLICY "Users can view messages in own conversations"
   ON public.messages FOR SELECT
@@ -129,13 +143,16 @@ CREATE POLICY "Users can delete messages in own conversations"
 CREATE TABLE IF NOT EXISTS public.usage (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
-  model TEXT NOT NULL,
+  model TEXT NOT NULL DEFAULT 'glm-4.5-air',
   tokens_input INTEGER NOT NULL DEFAULT 0,
   tokens_output INTEGER NOT NULL DEFAULT 0,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 ALTER TABLE public.usage ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view own usage" ON public.usage;
+DROP POLICY IF EXISTS "Users can insert own usage" ON public.usage;
 
 CREATE POLICY "Users can view own usage"
   ON public.usage FOR SELECT
@@ -162,6 +179,8 @@ CREATE TABLE IF NOT EXISTS public.subscriptions (
 );
 
 ALTER TABLE public.subscriptions ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view own subscriptions" ON public.subscriptions;
 
 CREATE POLICY "Users can view own subscriptions"
   ON public.subscriptions FOR SELECT
@@ -190,14 +209,17 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS set_profiles_updated_at ON public.profiles;
 CREATE TRIGGER set_profiles_updated_at
   BEFORE UPDATE ON public.profiles
   FOR EACH ROW EXECUTE FUNCTION public.update_updated_at();
 
+DROP TRIGGER IF EXISTS set_conversations_updated_at ON public.conversations;
 CREATE TRIGGER set_conversations_updated_at
   BEFORE UPDATE ON public.conversations
   FOR EACH ROW EXECUTE FUNCTION public.update_updated_at();
 
+DROP TRIGGER IF EXISTS set_subscriptions_updated_at ON public.subscriptions;
 CREATE TRIGGER set_subscriptions_updated_at
   BEFORE UPDATE ON public.subscriptions
   FOR EACH ROW EXECUTE FUNCTION public.update_updated_at();
