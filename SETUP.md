@@ -52,9 +52,9 @@ This creates all tables: `profiles`, `conversations`, `messages`, `usage`, `subs
 ### 2.4 Configure Auth
 
 1. In Supabase dashboard, go to **Authentication → URL Configuration**
-2. Set **Site URL** to `http://localhost:3000`
+2. Set **Site URL** to `http://localhost:3000` (development)
 3. Under **Redirect URLs**, add: `http://localhost:3000/auth/callback`
-4. Under **Email**, enable **Confirm email** if you want email verification
+4. Under **Email Auth**, toggle **Confirm email** ON if you want email verification (recommended)
 
 ## 3. AI Provider Setup
 
@@ -140,20 +140,30 @@ Now you can access:
 
 ### "Invalid API key"
 - Check your `ZAI_API_KEY` in `.env.local`
-- Restart the dev server after changing env vars
+- Restart the dev server after changing env vars (`Ctrl+C` then `npm run dev`)
 
 ### "User not found" after signup
 - Make sure the `handle_new_user` trigger ran successfully
 - Check Supabase → Table Editor → profiles for your row
+- If missing, run the `supabase-schema.sql` again
 
 ### Auth redirect loops
 - Verify **Site URL** is set correctly in Supabase Auth settings
-- Check `NEXT_PUBLIC_APP_URL` matches your actual URL
+- Check `NEXT_PUBLIC_APP_URL` in `.env.local` matches your actual URL
+- Make sure `/auth/callback` is in Supabase Redirect URLs
 
 ### Rate limiting issues
 - Rate limits are in-memory and reset on server restart
 - Adjust limits in `lib/rate-limit.ts`
 
+### Admin panel redirects to /chat
+- Make sure you ran the SQL to set your role to `admin`
+- Check Supabase Table Editor → your profile → `role` column
+
+### Email verification not working
+- Check Supabase → Authentication → Email → Confirm email is ON
+- Verify SMTP settings in Supabase → Settings → Authentication → SMTP
+
 ---
 
-Next: [DEPLOY.md](./DEPLOY.md) — Deploy to production
+**Next:** → [DEPLOY.md](./DEPLOY.md) — Deploy to production
