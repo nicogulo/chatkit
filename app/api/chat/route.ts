@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { canSendMessage, recordUsage } from "@/lib/actions/usage";
 import { rateLimit, RATE_LIMITS, getClientIp } from "@/lib/rate-limit";
 import { encrypt } from "@/lib/crypto";
+import { sanitizeInput, validateInput } from "@/lib/sanitize";
 import { type ModelId } from "@/types";
 
 export const maxDuration = 60;
@@ -60,10 +61,11 @@ export async function POST(req: Request) {
     if (conversationId && uiMessages?.length > 0) {
       const lastMsg = uiMessages[uiMessages.length - 1];
       if (lastMsg.role === "user") {
-        const userText = lastMsg.parts
+        const rawText = lastMsg.parts
           ?.filter((p: { type: string }) => p.type === "text")
           ?.map((p: { text: string }) => p.text)
           ?.join("") ?? "";
+        const userText = validateInput(sanitizeInput(rawText));
 
         supabase
           .from("messages")
@@ -114,7 +116,7 @@ Guidelines:
           await supabase.from("messages").insert({
             conversation_id: conversationId,
             role: "assistant",
-            content: encrypt(text),
+            content: encrypt(sanitizeInput(text)),
             tokens_input: usage.inputTokens ?? 0,
             tokens_output: usage.outputTokens ?? 0,
             model: selectedModel,

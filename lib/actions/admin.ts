@@ -3,6 +3,10 @@
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 
+// ⚠️ SECURITY: Admin queries must NEVER select "content" from the messages table.
+// Admin can only see metadata (counts, titles, models, dates).
+// Message content is private — encrypted at rest with AES-256-GCM.
+
 /** Verify current user is admin — throws if not */
 async function requireAdmin() {
   const supabase = await createClient();

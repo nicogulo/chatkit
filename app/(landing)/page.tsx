@@ -119,6 +119,10 @@ export default function LandingPage() {
           <p className="text-sm text-muted-foreground">
             © 2026 ChatKit. Built with Next.js + Supabase + AI SDK
           </p>
+          <div className="flex items-center gap-4 text-sm">
+            <a href="/privacy" className="text-muted-foreground hover:text-foreground transition">Privacy</a>
+            <a href="/terms" className="text-muted-foreground hover:text-foreground transition">Terms</a>
+          </div>
         </div>
       </footer>
     </div>
