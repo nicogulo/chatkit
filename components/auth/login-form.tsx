@@ -9,6 +9,7 @@ import { loginWithEmail, loginWithGitHub } from "@/lib/actions/auth-login";
 
 export function LoginForm() {
   const [serverError, setServerError] = useState<string | null>(null);
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const {
@@ -22,8 +23,16 @@ export function LoginForm() {
   const onSubmit = async (data: LoginValues) => {
     setLoading(true);
     setServerError(null);
+    setUnverifiedEmail(null);
     const result = await loginWithEmail(data.email, data.password);
     if (result?.error) {
+      // Check if error is about unverified email
+      if (
+        result.error.toLowerCase().includes("email") &&
+        result.error.toLowerCase().includes("confirm")
+      ) {
+        setUnverifiedEmail(data.email);
+      }
       setServerError(result.error);
       setLoading(false);
     }
@@ -52,6 +61,14 @@ export function LoginForm() {
         {serverError && (
           <div className="rounded-lg bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm text-destructive">
             {serverError}
+            {unverifiedEmail && (
+              <Link
+                href={`/verify-email?email=${encodeURIComponent(unverifiedEmail)}`}
+                className="block mt-2 text-primary hover:underline"
+              >
+                Resend verification email →
+              </Link>
+            )}
           </div>
         )}
 

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod/v4";
-import { User, Key, CreditCard, LogOut, Save, Loader2 } from "lucide-react";
+import { User, Key, CreditCard, LogOut, Save, Loader2, BarChart3 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -146,6 +146,25 @@ export default function SettingsPage() {
               ))}
             </div>
           </div>
+
+          {/* Usage Dashboard */}
+          <Link
+            href="/settings/usage"
+            className="block rounded-xl border border-border/50 bg-card p-6 transition hover:bg-card/80"
+          >
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
+                <BarChart3 className="h-4 w-4 text-primary" />
+              </div>
+              <div className="flex-1">
+                <h2 className="font-semibold">Usage Dashboard</h2>
+                <p className="text-xs text-muted-foreground">
+                  View message stats and token usage
+                </p>
+              </div>
+              <span className="text-sm text-muted-foreground">→</span>
+            </div>
+          </Link>
 
           {/* Billing */}
           <Link
