@@ -220,6 +220,64 @@ Edit `components/landing/animations.tsx` — typewriter speed, chat bubble typin
 
 ---
 
+## 🔒 Security & Encryption
+
+### Message Encryption
+
+ChatKit encrypts all user messages at rest using **AES-256-GCM** before storing them in the database.
+
+**How it works:**
+1. When a user sends a message, the content is encrypted with AES-256-GCM + a random IV
+2. The encrypted ciphertext (base64) is stored in Supabase
+3. When the user opens a conversation, messages are decrypted on the server and served normally
+4. The encryption key never touches the database
+
+**Key files:**
+- `lib/crypto.ts` — encrypt/decrypt helpers
+- `lib/sanitize.ts` — XSS input sanitization (runs before encryption)
+- `app/api/chat/route.ts` — encrypts on insert
+- `lib/actions/conversations.ts` — decrypts on read
+
+**Managing the encryption key:**
+
+```bash
+# Generate a new key
+openssl rand -base64 32
+
+# Add to .env.local
+ENCRYPTION_KEY=your-generated-key
+
+# Add to Vercel (production)
+echo "your-key" | vercel env add ENCRYPTION_KEY production
+```
+
+⚠️ **Critical rules:**
+- **Never change** the key after messages are encrypted — they become unreadable
+- **Never commit** the key to git
+- **Back it up** in a secure location (password manager, secrets manager)
+- If deploying to multiple environments, use **different keys** per environment
+
+**Backward compatibility:** If the key is missing or decryption fails, ChatKit falls back to returning the raw content. This allows a smooth migration from plaintext to encrypted.
+
+### Admin Zero-Knowledge Design
+
+The admin panel is designed to **never access message content**:
+
+- `getAdminStats()` — counts only (users, conversations, messages, tokens)
+- `getAdminUsers()` — profile metadata (name, plan, role, dates)
+- `getAdminUserDetail()` — conversation titles, model used, token counts
+- A security comment in `lib/actions/admin.ts` enforces this: _"Admin queries must NEVER select content from the messages table"_
+
+### Admin Access Control
+
+Three layers of protection ensure only admins can access `/admin/*` routes:
+
+1. **Middleware** (`lib/supabase/middleware.ts`) — checks auth + role, redirects non-admins
+2. **Layout** (`app/(admin)/layout.tsx`) — server-side role check with service role client
+3. **Server Actions** (`lib/actions/admin.ts`) — `requireAdmin()` called before every admin operation
+
+---
+
 ## Quick Reference
 
 | What to change | File |
@@ -235,3 +293,9 @@ Edit `components/landing/animations.tsx` — typewriter speed, chat bubble typin
 | Features list | `app/(landing)/page.tsx` |
 | Chat streaming | `app/api/chat/route.ts` |
 | Admin dashboard | `app/(admin)/admin/` |
+| Encryption key | `ENCRYPTION_KEY` env var |
+| Encryption logic | `lib/crypto.ts` |
+| Input sanitization | `lib/sanitize.ts` |
+| Privacy Policy | `app/(landing)/privacy/page.tsx` |
+| Terms of Service | `app/(landing)/terms/page.tsx` |
+| Admin role check | `lib/actions/admin.ts`, `lib/supabase/middleware.ts` |

@@ -96,6 +96,9 @@ SUPABASE_SERVICE_ROLE_KEY=eyJhbGci...
 ZAI_API_KEY=your-api-key-here
 
 # Encryption (generate with: openssl rand -base64 32)
+# ⚠️ IMPORTANT: Never change this after messages are encrypted!
+# Losing this key = losing all encrypted messages.
+# Back it up somewhere safe.
 ENCRYPTION_KEY=your-encryption-key-here
 
 # App URL

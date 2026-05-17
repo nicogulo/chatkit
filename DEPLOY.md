@@ -56,6 +56,7 @@ Add these variables:
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Your anon key | Production, Preview |
 | `SUPABASE_SERVICE_ROLE_KEY` | Your service role key | Production, Preview |
 | `ZAI_API_KEY` | Your AI API key | Production |
+| `ENCRYPTION_KEY` | `openssl rand -base64 32` | Production, Preview |
 | `NEXT_PUBLIC_APP_URL` | `https://your-app.vercel.app` | Production |
 
 ### Optional (Stripe):
@@ -73,6 +74,15 @@ After adding variables, redeploy:
 ```bash
 vercel --prod
 ```
+
+## ⚠️ Important: Encryption Key
+
+The `ENCRYPTION_KEY` is used to encrypt all user messages at rest using AES-256-GCM.
+
+- **Generate with:** `openssl rand -base64 32`
+- **Never change it** after messages are stored — existing messages will become unreadable
+- **Never commit it** to source control — only in `.env.local` and Vercel env vars
+- **Back it up** — losing this key means losing all encrypted messages
 
 ## 4. Update Supabase Auth Settings
 

@@ -9,6 +9,8 @@ Ship your AI product in hours, not months.
 - 🤖 **Multi-model AI Chat** — Stream responses from multiple AI models (GLM, OpenAI, or any OpenAI-compatible API)
 - 💬 **Real-time Streaming** — Token-by-token streaming with typing indicators and thinking animations
 - 🔐 **Auth System** — Supabase Auth with email verification, protected routes, and session management
+- 🔒 **Message Encryption** — AES-256-GCM encryption at rest, zero-knowledge admin, XSS prevention
+- 🛡️ **Security Hardened** — 3-layer admin protection, rate limiting, input sanitization, RLS policies
 - 💳 **Billing Ready** — Stripe integration with subscription management (upgrade to Lemon Squeezy easily)
 - 📊 **Usage Dashboard** — Track token usage per model with 7-day charts and daily limits
 - 🛡️ **Admin Panel** — User management, plan changes, ban/unban, and usage monitoring
@@ -91,9 +93,11 @@ chatkit/
 │   └── ui/               # Shared UI components
 ├── lib/
 │   ├── actions/          # Server actions
-│   ├── supabase/         # Supabase client, server, middleware
+│   ├── supabase/         # Supabase client, server, middleware, admin client
 │   ├── store/            # Zustand stores
 │   ├── ai.ts             # AI model config
+│   ├── crypto.ts         # AES-256-GCM message encryption
+│   ├── sanitize.ts       # XSS input sanitization
 │   ├── rate-limit.ts     # Rate limiter
 │   └── utils.ts          # Utilities
 └── types/                # TypeScript type definitions
@@ -106,6 +110,22 @@ chatkit/
 | [SETUP.md](./SETUP.md) | Full step-by-step setup guide |
 | [DEPLOY.md](./DEPLOY.md) | Deploy to production on Vercel |
 | [CUSTOMIZE.md](./CUSTOMIZE.md) | Customize branding, pricing, AI models |
+
+## 🔒 Security
+
+ChatKit is built with security as a priority:
+
+| Feature | Detail |
+|---------|--------|
+| **Message Encryption** | AES-256-GCM with random IV per message — even DB access can't read chats |
+| **Zero-Knowledge Admin** | Admin panel never fetches message content — only metadata (titles, counts, dates) |
+| **Admin Protection** | 3-layer guard: middleware + layout + server actions all verify admin role |
+| **Rate Limiting** | Sliding window rate limiter on chat, auth, and API routes |
+| **Input Sanitization** | XSS prevention — HTML tags, event handlers, and scripts stripped before storage |
+| **Row Level Security** | Supabase RLS policies ensure users only access their own data |
+| **Privacy & Terms** | Built-in `/privacy` and `/terms` pages with GDPR basics |
+
+See [CUSTOMIZE.md](./CUSTOMIZE.md) for encryption key management.
 
 ## 💰 Monetization
 
