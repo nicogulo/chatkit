@@ -57,14 +57,14 @@ export function HeroSection() {
       >
         <Link
           href="/register"
-          className="glow group flex items-center justify-center gap-2 rounded-xl bg-primary px-8 py-3 text-base font-semibold text-primary-foreground hover:bg-primary/90 transition sm:py-3.5"
+          className="glow group flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition sm:px-8 sm:py-3 sm:text-base sm:py-3.5"
         >
           Get Started Free
-          <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
+          <ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5 sm:h-4 sm:w-4" />
         </Link>
         <Link
           href="/chat"
-          className="gradient-border rounded-xl bg-card px-8 py-3 text-base font-semibold text-card-foreground hover:bg-card/80 transition sm:py-3.5"
+          className="gradient-border rounded-xl bg-card px-5 py-2.5 text-sm font-semibold text-card-foreground hover:bg-card/80 transition sm:px-8 sm:py-3 sm:text-base sm:py-3.5"
         >
           Live Demo
         </Link>

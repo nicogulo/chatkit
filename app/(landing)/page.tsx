@@ -93,13 +93,13 @@ export default function LandingPage() {
           <div className="mt-6 flex flex-col items-center gap-3 sm:mt-8 sm:flex-row sm:justify-center sm:gap-4">
             <Link
               href="/register"
-              className="glow w-full rounded-xl bg-primary px-8 py-3.5 text-base font-semibold text-primary-foreground hover:bg-primary/90 transition sm:w-auto"
+              className="glow w-full rounded-xl bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition sm:w-auto sm:px-8 sm:py-3.5 sm:text-base"
             >
               Get Started Free →
             </Link>
             <Link
               href="/pricing"
-              className="w-full rounded-xl border border-border/50 bg-card px-8 py-3.5 text-base font-semibold text-card-foreground hover:bg-card/80 transition sm:w-auto"
+              className="w-full rounded-xl border border-border/50 bg-card px-6 py-2.5 text-sm font-semibold text-card-foreground hover:bg-card/80 transition sm:w-auto sm:px-8 sm:py-3.5 sm:text-base"
             >
               View Pricing
             </Link>
