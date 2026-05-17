@@ -167,7 +167,7 @@ function WelcomeScreen() {
           <div className="mb-1.5 flex items-center">
             <ModelPill />
           </div>
-          <div className="flex items-end gap-1.5 sm:gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             <div className="flex-1 min-w-0">
               <textarea
                 value={input}
@@ -182,7 +182,7 @@ function WelcomeScreen() {
             <button
               type="submit"
               disabled={sending || !input.trim()}
-              className="glow shrink-0 rounded-xl bg-primary p-2.5 text-primary-foreground hover:bg-primary/90 transition disabled:opacity-40 sm:p-3"
+              className="glow shrink-0 rounded-xl bg-primary h-[42px] w-[42px] sm:h-[44px] sm:w-[44px] flex items-center justify-center text-primary-foreground hover:bg-primary/90 transition disabled:opacity-40"
             >
               {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             </button>
@@ -382,7 +382,7 @@ function ChatView({ conversationId }: { conversationId: string }) {
           <div className="mb-1.5 flex items-center">
             <ModelPill />
           </div>
-          <div className="flex items-end gap-1.5 sm:gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             <div className="flex-1 min-w-0">
               <textarea
                 ref={textareaRef}
@@ -394,7 +394,7 @@ function ChatView({ conversationId }: { conversationId: string }) {
                 className="w-full resize-none rounded-xl bg-card px-3 py-2.5 text-sm outline-none border border-border focus:border-primary/50 transition placeholder:text-muted-foreground/60 sm:px-4 sm:py-3"
               />
             </div>
-            <button type="submit" disabled={isLoading || !input.trim()} className="glow shrink-0 rounded-xl bg-primary p-2.5 text-primary-foreground hover:bg-primary/90 transition disabled:opacity-40 sm:p-3">
+            <button type="submit" disabled={isLoading || !input.trim()} className="glow shrink-0 rounded-xl bg-primary h-[42px] w-[42px] sm:h-[44px] sm:w-[44px] flex items-center justify-center text-primary-foreground hover:bg-primary/90 transition disabled:opacity-40">
               {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             </button>
           </div>
