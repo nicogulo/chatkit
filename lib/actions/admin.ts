@@ -26,6 +26,7 @@ async function createAdminClient() {
   );
 }
 
+/** Verify current user is admin — throws if not */
 async function requireAdmin() {
   const supabase = await createClient();
   const {
@@ -34,7 +35,9 @@ async function requireAdmin() {
 
   if (!user) throw new Error("Unauthorized");
 
-  const { data: profile } = await supabase
+  // Use admin client to read own profile (bypasses RLS to ensure we get the role)
+  const adminClient = await createAdminClient();
+  const { data: profile } = await adminClient
     .from("profiles")
     .select("role")
     .eq("id", user.id)
@@ -44,10 +47,11 @@ async function requireAdmin() {
     throw new Error("Forbidden — admin only");
   }
 
-  return { supabase, userId: user.id };
+  return { userId: user.id };
 }
 
 export async function getAdminStats() {
+  await requireAdmin();
   const adminClient = await createAdminClient();
 
   const [users, conversations, messages, usage] = await Promise.all([
@@ -86,6 +90,7 @@ export async function getAdminUsers(opts?: {
   page?: number;
   perPage?: number;
 }) {
+  await requireAdmin();
   const adminClient = await createAdminClient();
 
   const page = opts?.page ?? 1;
@@ -120,6 +125,7 @@ export async function getAdminUsers(opts?: {
 }
 
 export async function getAdminUserDetail(userId: string) {
+  await requireAdmin();
   const adminClient = await createAdminClient();
 
   const [profile, conversations, recentUsage] = await Promise.all([
@@ -156,6 +162,7 @@ export async function adminUpdateUser(
   userId: string,
   updates: { plan?: string; role?: string; banned?: boolean }
 ) {
+  await requireAdmin();
   const adminClient = await createAdminClient();
 
   const { data, error } = await adminClient
@@ -175,6 +182,7 @@ export async function adminUpdateUser(
 }
 
 export async function adminDeleteUser(userId: string) {
+  await requireAdmin();
   const adminClient = await createAdminClient();
 
   // Delete user data
@@ -192,7 +200,6 @@ export async function adminDeleteUser(userId: string) {
   // Delete profile
   await adminClient.from("profiles").delete().eq("id", userId);
 
-  // Note: to delete from auth.users, need Supabase admin API
   revalidatePath("/admin");
   return { success: true };
 }

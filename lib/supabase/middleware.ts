@@ -36,7 +36,7 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Admin routes — require admin role
+  // Admin routes — require auth + admin role
   const isAdminRoute = request.nextUrl.pathname.startsWith("/admin");
   if (isAdminRoute) {
     if (!user) {
@@ -44,8 +44,30 @@ export async function updateSession(request: NextRequest) {
       url.pathname = "/login";
       return NextResponse.redirect(url);
     }
-    // Fetch profile to check role — use service-level check in server components
-    // Middleware only checks auth here; role check happens in server actions/layout
+
+    // Check admin role using service role client
+    const adminClient = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        cookies: {
+          getAll() { return request.cookies.getAll(); },
+          setAll() {},
+        },
+      }
+    );
+
+    const { data: profile } = await adminClient
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    if (!profile || profile.role !== "admin") {
+      const url = request.nextUrl.clone();
+      url.pathname = "/chat";
+      return NextResponse.redirect(url);
+    }
   }
 
   // Protected routes — redirect to /login if not authenticated
