@@ -1,17 +1,45 @@
 "use client";
 
-import { useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import { checkEmailVerified } from "@/lib/actions/auth-verify";
 import { resendVerificationEmail } from "@/lib/actions/auth-verify";
-import { Mail, RefreshCw, ArrowLeft, CheckCircle2 } from "lucide-react";
+import { Mail, RefreshCw, ArrowLeft, CheckCircle2, Loader2 } from "lucide-react";
 import Link from "next/link";
 
 export function VerifyEmailForm() {
   const searchParams = useSearchParams();
   const email = searchParams.get("email") ?? "";
+  const router = useRouter();
+  const [checking, setChecking] = useState(true);
   const [resending, setResending] = useState(false);
   const [resent, setResent] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Check if already verified — redirect to chat if so
+  useEffect(() => {
+    checkEmailVerified().then((result) => {
+      if (result.verified) {
+        router.replace("/chat");
+      } else {
+        setChecking(false);
+      }
+    });
+  }, [router]);
+
+  // Poll every 3 seconds to detect when user confirms email
+  useEffect(() => {
+    if (checking) return;
+
+    const interval = setInterval(async () => {
+      const result = await checkEmailVerified();
+      if (result.verified) {
+        router.replace("/chat");
+      }
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [checking, router]);
 
   const handleResend = async () => {
     if (!email) return;
@@ -26,6 +54,15 @@ export function VerifyEmailForm() {
     }
     setResending(false);
   };
+
+  // Show loader while checking auth status
+  if (checking) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
