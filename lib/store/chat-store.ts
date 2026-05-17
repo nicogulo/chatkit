@@ -23,7 +23,8 @@ interface ChatState {
 }
 
 export const useChatStore = create<ChatState>((set) => ({
-  sidebarOpen: true,
+  // Sidebar — default closed on mobile, open on desktop
+  sidebarOpen: typeof window !== 'undefined' && window.innerWidth >= 768,
   toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
   setSidebarOpen: (open) => set({ sidebarOpen: open }),
 

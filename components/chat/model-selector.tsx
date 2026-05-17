@@ -26,9 +26,10 @@ export function ModelSelector() {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted/50 hover:text-foreground transition"
+        className="flex shrink-0 items-center gap-1 rounded-lg px-2 py-2 text-xs font-medium text-muted-foreground hover:bg-muted/50 hover:text-foreground transition sm:px-2.5 sm:py-1.5"
       >
-        <span>{current.name}</span>
+        <span className="hidden sm:inline">{current.name}</span>
+        <span className="sm:hidden">{current.id.split('-').pop()}</span>
         <ChevronDown className={`h-3 w-3 transition ${open ? "rotate-180" : ""}`} />
       </button>
 

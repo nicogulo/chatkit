@@ -145,28 +145,26 @@ function WelcomeScreen() {
 
   return (
     <div className="flex flex-1 flex-col">
-      <div className="flex items-center gap-2 border-b border-border px-4 py-3">
-        {!sidebarOpen && (
-          <button onClick={toggleSidebar} className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition">
-            <PanelLeft className="h-4 w-4" />
-          </button>
-        )}
-        <span className="text-sm font-medium gradient-text">New Chat</span>
+      <div className="flex items-center gap-2 border-b border-border px-3 py-2.5 sm:px-4 sm:py-3">
+        <button onClick={toggleSidebar} className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition">
+          <PanelLeft className="h-4 w-4" />
+        </button>
+        <span className="text-sm font-medium gradient-text truncate">New Chat</span>
       </div>
 
-      <div className="flex flex-1 flex-col items-center justify-center gap-6 px-4">
+      <div className="flex flex-1 flex-col items-center justify-center gap-4 px-4 sm:gap-6">
         <div className="flex items-center gap-2">
-          <Sparkles className="h-8 w-8 text-primary" />
-          <h1 className="text-3xl font-bold gradient-text">ChatKit</h1>
+          <Sparkles className="h-6 w-6 text-primary sm:h-8 sm:w-8" />
+          <h1 className="text-2xl font-bold gradient-text sm:text-3xl">ChatKit</h1>
         </div>
-        <p className="text-sm text-muted-foreground max-w-md text-center">
+        <p className="text-xs text-muted-foreground max-w-xs text-center sm:text-sm sm:max-w-md">
           Start a conversation or select one from the sidebar.
         </p>
       </div>
 
-      <div className="border-t border-border p-4">
-        <form onSubmit={handleSend} className="mx-auto flex max-w-3xl items-end gap-2">
-          <div className="flex-1">
+      <div className="border-t border-border p-2 sm:p-4">
+        <form onSubmit={handleSend} className="mx-auto flex max-w-3xl items-end gap-1.5 sm:gap-2">
+          <div className="flex-1 min-w-0">
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
@@ -174,14 +172,14 @@ function WelcomeScreen() {
               placeholder="Send a message..."
               rows={1}
               disabled={sending}
-              className="w-full resize-none rounded-xl bg-card px-4 py-3 text-sm outline-none border border-border focus:border-primary/50 transition placeholder:text-muted-foreground/60 disabled:opacity-50"
+              className="w-full resize-none rounded-xl bg-card px-3 py-2.5 text-sm outline-none border border-border focus:border-primary/50 transition placeholder:text-muted-foreground/60 disabled:opacity-50 sm:px-4 sm:py-3"
             />
           </div>
           <ModelSelector />
           <button
             type="submit"
             disabled={sending || !input.trim()}
-            className="glow rounded-xl bg-primary p-3 text-primary-foreground hover:bg-primary/90 transition disabled:opacity-40"
+            className="glow shrink-0 rounded-xl bg-primary p-2.5 text-primary-foreground hover:bg-primary/90 transition disabled:opacity-40 sm:p-3"
           >
             {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
           </button>
@@ -290,13 +288,11 @@ function ChatView({ conversationId }: { conversationId: string }) {
 
   return (
     <div className="flex flex-1 flex-col">
-      <div className="flex items-center gap-2 border-b border-border px-4 py-3">
-        {!sidebarOpen && (
-          <button onClick={toggleSidebar} className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition">
-            <PanelLeft className="h-4 w-4" />
-          </button>
-        )}
-        <span className="text-sm font-medium text-foreground">Chat</span>
+      <div className="flex items-center gap-2 border-b border-border px-3 py-2.5 sm:px-4 sm:py-3">
+        <button onClick={toggleSidebar} className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition">
+          <PanelLeft className="h-4 w-4" />
+        </button>
+        <span className="text-sm font-medium text-foreground truncate">Chat</span>
         {loadingHistory && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
       </div>
 
@@ -377,9 +373,9 @@ function ChatView({ conversationId }: { conversationId: string }) {
         )}
       </div>
 
-      <div className="border-t border-border p-3 sm:p-4">
-        <form onSubmit={handleSubmit} className="mx-auto flex max-w-3xl items-end gap-2">
-          <div className="flex-1">
+      <div className="border-t border-border p-2 sm:p-4">
+        <form onSubmit={handleSubmit} className="mx-auto flex max-w-3xl items-end gap-1.5 sm:gap-2">
+          <div className="flex-1 min-w-0">
             <textarea
               ref={textareaRef}
               value={input}
@@ -387,11 +383,11 @@ function ChatView({ conversationId }: { conversationId: string }) {
               onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSubmit(e); } }}
               placeholder="Send a message..."
               rows={1}
-              className="w-full resize-none rounded-xl bg-card px-4 py-3 text-sm outline-none border border-border focus:border-primary/50 transition placeholder:text-muted-foreground/60"
+              className="w-full resize-none rounded-xl bg-card px-3 py-2.5 text-sm outline-none border border-border focus:border-primary/50 transition placeholder:text-muted-foreground/60 sm:px-4 sm:py-3"
             />
           </div>
           <ModelSelector />
-          <button type="submit" disabled={isLoading || !input.trim()} className="glow rounded-xl bg-primary p-3 text-primary-foreground hover:bg-primary/90 transition disabled:opacity-40">
+          <button type="submit" disabled={isLoading || !input.trim()} className="glow shrink-0 rounded-xl bg-primary p-2.5 text-primary-foreground hover:bg-primary/90 transition disabled:opacity-40 sm:p-3">
             {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
           </button>
         </form>
