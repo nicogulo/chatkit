@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { motion } from "framer-motion";
 
 /** Typewriter effect — types text character by character */
@@ -22,6 +22,9 @@ export function TypewriterText({
   const [charIdx, setCharIdx] = useState(0);
   const [isDeleting, setIsDeleting] = useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  // Calculate min-width based on longest text to prevent layout shift
+  const longestText = useMemo(() => texts.reduce((a, b) => (b.length > a.length ? b : a), ""), [texts]);
 
   useEffect(() => {
     const currentText = texts[textIdx];
@@ -47,7 +50,7 @@ export function TypewriterText({
   }, [charIdx, isDeleting, textIdx, texts, speed, deleteSpeed, pauseMs]);
 
   return (
-    <span className={className}>
+    <span className={className} style={{ display: "inline-block", minWidth: `${longestText.length}ch` }}>
       {display}
       <motion.span
         animate={{ opacity: [1, 0] }}
@@ -58,7 +61,7 @@ export function TypewriterText({
   );
 }
 
-/** Chat bubble with typing animation */
+/** Chat bubble with typing animation — fixed height to prevent layout shift */
 export function TypingChatBubble({
   text,
   delay = 500,
@@ -95,7 +98,7 @@ export function TypingChatBubble({
   }, [display, started, text, speed]);
 
   return (
-    <span className={className}>
+    <span className={className} style={{ display: "block", minHeight: "4.5em" }}>
       {display}
       {display.length < text.length && started && (
         <motion.span
