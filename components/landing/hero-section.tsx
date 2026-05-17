@@ -27,14 +27,13 @@ export function HeroSection() {
         className="mx-auto max-w-4xl text-3xl font-bold tracking-tight leading-tight overflow-hidden sm:text-5xl lg:text-7xl"
       >
         Build your{" "}
-        <span className="gradient-text">
-          <TypewriterText
-            texts={["AI Chat product", "SaaS in a weekend", "next unicorn", "revenue machine"]}
-            speed={70}
-            deleteSpeed={35}
-            pauseMs={2500}
-          />
-        </span>
+        <TypewriterText
+          texts={["AI Chat product", "SaaS in a weekend", "next unicorn", "revenue machine"]}
+          speed={70}
+          deleteSpeed={35}
+          pauseMs={2500}
+          className="gradient-text"
+        />
         <br />
         with Next.js
       </motion.h1>

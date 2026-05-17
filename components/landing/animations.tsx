@@ -23,9 +23,6 @@ export function TypewriterText({
   const [isDeleting, setIsDeleting] = useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
-  // Calculate min-width based on longest text to prevent layout shift
-  const longestText = useMemo(() => texts.reduce((a, b) => (b.length > a.length ? b : a), ""), [texts]);
-
   useEffect(() => {
     const currentText = texts[textIdx];
 
@@ -50,7 +47,7 @@ export function TypewriterText({
   }, [charIdx, isDeleting, textIdx, texts, speed, deleteSpeed, pauseMs]);
 
   return (
-    <span className={className} style={{ display: "inline-block", position: "relative" }}>
+    <span className={className}>
       {display}
       <motion.span
         animate={{ opacity: [1, 0] }}
