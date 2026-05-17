@@ -22,20 +22,20 @@ export default function LandingPage() {
       <ChatPreviewSection />
 
       {/* Features */}
-      <section className="relative z-10 mx-auto max-w-7xl px-6 py-24">
+      <section className="relative z-10 mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24">
         <div className="text-center">
-          <h2 className="text-3xl font-bold sm:text-4xl">
+          <h2 className="text-2xl font-bold sm:text-3xl lg:text-4xl">
             Everything you need to <span className="gradient-text">launch</span>
           </h2>
-          <p className="mx-auto mt-4 max-w-lg text-muted-foreground">
+          <p className="mx-auto mt-4 max-w-lg text-sm sm:text-base text-muted-foreground">
             Not a template. A production-ready codebase with best practices baked in.
           </p>
         </div>
-        <div className="mt-16 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-10 grid gap-4 sm:mt-16 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {features.map((f) => (
             <div
               key={f.title}
-              className="group gradient-border rounded-xl bg-card/50 p-6 backdrop-blur-sm transition hover:bg-card/80"
+              className="group gradient-border rounded-xl bg-card/50 p-5 sm:p-6 backdrop-blur-sm transition hover:bg-card/80"
             >
               <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-primary/10 to-accent/10">
                 <f.icon className="h-5 w-5 text-primary" />
@@ -50,9 +50,9 @@ export default function LandingPage() {
       </section>
 
       {/* Tech Stack */}
-      <section className="relative z-10 mx-auto max-w-7xl px-6 py-24">
+      <section className="relative z-10 mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24">
         <div className="text-center">
-          <h2 className="text-3xl font-bold sm:text-4xl">Modern Tech Stack</h2>
+          <h2 className="text-2xl font-bold sm:text-3xl lg:text-4xl">Modern Tech Stack</h2>
           <p className="mt-4 text-muted-foreground">
             Built with the latest and greatest. No legacy bloat.
           </p>
@@ -82,24 +82,24 @@ export default function LandingPage() {
       </section>
 
       {/* CTA */}
-      <section className="relative z-10 mx-auto max-w-7xl px-6 py-24">
-        <div className="glow rounded-2xl border border-border/50 bg-gradient-to-br from-primary/5 to-accent/5 p-12 text-center backdrop-blur-sm">
-          <h2 className="text-3xl font-bold sm:text-4xl">
+      <section className="relative z-10 mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24">
+        <div className="glow rounded-2xl border border-border/50 bg-gradient-to-br from-primary/5 to-accent/5 p-8 sm:p-12 text-center backdrop-blur-sm">
+          <h2 className="text-2xl font-bold sm:text-3xl lg:text-4xl">
             Ready to ship your AI product?
           </h2>
-          <p className="mx-auto mt-4 max-w-md text-muted-foreground">
+          <p className="mx-auto mt-4 max-w-md text-sm sm:text-base text-muted-foreground">
             Get the complete codebase. Add your API keys. Deploy to Vercel. Done.
           </p>
-          <div className="mt-8 flex justify-center gap-4">
+          <div className="mt-6 flex flex-col items-center gap-3 sm:mt-8 sm:flex-row sm:justify-center sm:gap-4">
             <Link
               href="/register"
-              className="glow rounded-xl bg-primary px-8 py-3.5 text-base font-semibold text-primary-foreground hover:bg-primary/90 transition"
+              className="glow w-full rounded-xl bg-primary px-8 py-3.5 text-base font-semibold text-primary-foreground hover:bg-primary/90 transition sm:w-auto"
             >
               Get Started Free →
             </Link>
             <Link
               href="/pricing"
-              className="rounded-xl border border-border/50 bg-card px-8 py-3.5 text-base font-semibold text-card-foreground hover:bg-card/80 transition"
+              className="w-full rounded-xl border border-border/50 bg-card px-8 py-3.5 text-base font-semibold text-card-foreground hover:bg-card/80 transition sm:w-auto"
             >
               View Pricing
             </Link>

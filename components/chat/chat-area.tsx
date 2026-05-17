@@ -319,7 +319,7 @@ function ChatView({ conversationId }: { conversationId: string }) {
                       transition={{ duration: 0.2 }}
                       className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
                     >
-                      <div className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${message.role === "user" ? "bg-primary text-primary-foreground" : "bg-card border border-border"}`}>
+                      <div className={`max-w-[90%] rounded-2xl px-3 py-2.5 text-sm leading-relaxed sm:max-w-[85%] sm:px-4 sm:py-3 ${message.role === "user" ? "bg-primary text-primary-foreground" : "bg-card border border-border"}`}>
                         {message.role === "assistant" ? (
                           <div className="prose prose-invert prose-sm max-w-none">
                             <ReactMarkdown remarkPlugins={[remarkGfm]} components={{
@@ -377,7 +377,7 @@ function ChatView({ conversationId }: { conversationId: string }) {
         )}
       </div>
 
-      <div className="border-t border-border p-4">
+      <div className="border-t border-border p-3 sm:p-4">
         <form onSubmit={handleSubmit} className="mx-auto flex max-w-3xl items-end gap-2">
           <div className="flex-1">
             <textarea

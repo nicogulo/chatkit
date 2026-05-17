@@ -1,19 +1,23 @@
 # ChatKit TODO
 
-## Bugs
-- [ ] Skeleton di chat screen kurang panjang (perlu lebih banyak baris skeleton)
+## Done ✅
+- [x] US-006→009: Chat Core
+- [x] US-010→012: Landing page, Auth, Settings
+- [x] US-013: Email verification
+- [x] US-014: Rate limiting
+- [x] US-015: Usage dashboard
+- [x] US-017: Responsive mobile
+- [x] US-018: User avatar real data
+- [x] Landing page typewriter effect
+- [x] Chat bubble typing animation
+- [x] Claude-style thinking indicator
+- [x] Typing cursor on streaming
+- [x] Layout shift fix
 
-## Landing Page Enhancement
-- [ ] Hero section: animasi text typing (typewriter effect)
-- [ ] Chat preview section: text typing di chat bubble (animasi AI response muncul karakter per karakter)
-- [ ] Overall landing page lebih "heboh" / impressive
+## Bugs
+- [ ] (none currently)
 
 ## Features
-- [ ] US-013: Email verification
-- [ ] US-014: Rate limiting
-- [ ] US-015: Usage dashboard
 - [ ] US-016: Admin panel
 - [ ] Stripe → Lemon Squeezy migration
 - [ ] Update pricing page copy (GLM models)
-- [ ] Responsive mobile
-- [ ] User avatar real data (bukan hardcoded "N")

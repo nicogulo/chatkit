@@ -33,8 +33,8 @@ export default function PricingPage() {
       </nav>
 
       {/* Header */}
-      <div className="relative z-10 mx-auto max-w-5xl px-6 pt-24 pb-8 text-center">
-        <h1 className="text-4xl font-bold sm:text-5xl">
+      <div className="relative z-10 mx-auto max-w-5xl px-4 pt-20 pb-8 text-center sm:px-6 sm:pt-24">
+        <h1 className="text-3xl font-bold sm:text-5xl">
           Simple, transparent{" "}
           <span className="gradient-text">pricing</span>
         </h1>
@@ -44,15 +44,15 @@ export default function PricingPage() {
       </div>
 
       {/* Plans */}
-      <div className="relative z-10 mx-auto max-w-5xl px-6 pb-24">
-        <div className="grid gap-6 sm:grid-cols-3">
+      <div className="relative z-10 mx-auto max-w-5xl px-4 pb-20 sm:px-6 sm:pb-24">
+        <div className="grid gap-4 sm:gap-6 sm:grid-cols-3">
           {plans.map((plan) => (
             <div
               key={plan.name}
               className={
                 plan.popular
                   ? "gradient-border glow-sm rounded-2xl bg-card p-8"
-                  : "rounded-2xl border border-border/50 bg-card/50 p-8"
+                  : "rounded-2xl border border-border/50 bg-card/50 p-6 sm:p-8"
               }
             >
               {plan.popular && (

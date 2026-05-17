@@ -26,7 +26,8 @@ import {
 } from "@/lib/actions/conversations";
 import { useChatStore } from "@/lib/store/chat-store";
 import { createClient } from "@/lib/supabase/client";
-import type { Conversation } from "@/types";
+import { getProfile } from "@/lib/actions/profile";
+import type { Conversation, Profile } from "@/types";
 
 export function ChatSidebar() {
   const router = useRouter();
@@ -47,6 +48,7 @@ export function ChatSidebar() {
   const [contextMenuId, setContextMenuId] = useState<string | null>(null);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const editInputRef = useRef<HTMLInputElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
@@ -56,15 +58,21 @@ export function ChatSidebar() {
     if (id) setActiveConversationId(id);
   }, [params?.id, setActiveConversationId]);
 
-  // Fetch conversations
+  // Fetch conversations + profile
   useEffect(() => {
     loadConversations();
+    loadProfile();
   }, []);
 
   const loadConversations = async () => {
     const data = await getConversations();
     setConversations(data as Conversation[]);
     setLoading(false);
+  };
+
+  const loadProfile = async () => {
+    const p = await getProfile();
+    setProfile(p);
   };
 
   // Close user menu on outside click
@@ -84,6 +92,10 @@ export function ChatSidebar() {
     await supabase.auth.signOut();
     router.push("/login");
   };
+
+  // Get display name and avatar initial
+  const displayName = profile?.display_name || "User";
+  const avatarInitial = displayName.charAt(0).toUpperCase();
 
   // Filter by search
   const filtered = conversations.filter((c) =>
@@ -108,27 +120,23 @@ export function ChatSidebar() {
     groups[label].push(c);
   }
 
-  // ✅ New chat — navigate to welcome screen instantly
   const handleNew = async () => {
     setActiveConversationId(null);
     router.push("/chat");
+    // On mobile, close sidebar after navigation
+    if (window.innerWidth < 768) toggleSidebar();
   };
 
-  // ✅ OPTIMISTIC: Rename — instant update title, API in background
   const handleRename = async (id: string) => {
     if (!editTitle.trim()) return;
     const oldTitle = conversations.find((c) => c.id === id)?.title;
     setEditingId(null);
-
-    // Optimistic
     setConversations((prev) =>
       prev.map((c) => (c.id === id ? { ...c, title: editTitle.trim() } : c))
     );
-
     try {
       await renameConversation(id, editTitle.trim());
     } catch {
-      // Rollback
       if (oldTitle) {
         setConversations((prev) =>
           prev.map((c) => (c.id === id ? { ...c, title: oldTitle } : c))
@@ -137,23 +145,17 @@ export function ChatSidebar() {
     }
   };
 
-  // ✅ OPTIMISTIC: Delete — instant remove
   const handleDelete = async (id: string) => {
     setContextMenuId(null);
     const wasActive = activeConversationId === id;
-
-    // Optimistic: remove from list
     setConversations((prev) => prev.filter((c) => c.id !== id));
     if (wasActive) {
       setActiveConversationId(null);
       router.push("/chat");
     }
-
-    // Background API call
     try {
       await deleteConversation(id);
     } catch {
-      // Rollback by reloading
       loadConversations();
     }
   };
@@ -164,250 +166,279 @@ export function ChatSidebar() {
     setTimeout(() => editInputRef.current?.focus(), 50);
   };
 
+  const handleSelectConversation = (id: string) => {
+    setActiveConversationId(id);
+    router.push(`/chat/${id}`);
+    // On mobile, close sidebar after selection
+    if (window.innerWidth < 768) toggleSidebar();
+  };
+
   return (
-    <motion.aside
-      initial={false}
-      animate={{ width: sidebarOpen ? 280 : 0, opacity: sidebarOpen ? 1 : 0 }}
-      transition={{ duration: 0.2, ease: "easeInOut" }}
-      className="h-screen flex-shrink-0 overflow-hidden border-r border-border bg-card/50 backdrop-blur-sm"
-    >
-      <div className="flex h-full w-[280px] flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between p-3">
-          <h2 className="text-sm font-semibold gradient-text">ChatKit</h2>
-          <div className="flex items-center gap-1">
-            <button
-              onClick={handleNew}
-              className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition"
-              title="New Chat"
-            >
-              <Plus className="h-4 w-4" />
-            </button>
-            <button
-              onClick={toggleSidebar}
-              className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition"
-              title="Close sidebar"
-            >
-              <PanelLeftClose className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
+    <>
+      {/* Mobile overlay backdrop */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/50 md:hidden"
+          onClick={toggleSidebar}
+        />
+      )}
 
-        {/* Search */}
-        <div className="px-3 pb-2">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search..."
-              className="w-full rounded-md bg-muted/50 py-1.5 pl-8 pr-3 text-xs outline-none focus:ring-1 focus:ring-primary/50 placeholder:text-muted-foreground/60"
-            />
+      <motion.aside
+        initial={false}
+        animate={{
+          width: sidebarOpen ? 280 : 0,
+          opacity: sidebarOpen ? 1 : 0,
+        }}
+        transition={{ duration: 0.2, ease: "easeInOut" }}
+        className={`h-screen flex-shrink-0 overflow-hidden border-r border-border bg-card/50 backdrop-blur-sm ${
+          sidebarOpen ? "fixed z-40 md:relative md:z-0" : "md:relative"
+        }`}
+      >
+        <div className="flex h-full w-[280px] flex-col">
+          {/* Header */}
+          <div className="flex items-center justify-between p-3">
+            <h2 className="text-sm font-semibold gradient-text">ChatKit</h2>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={handleNew}
+                className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition"
+                title="New Chat"
+              >
+                <Plus className="h-4 w-4" />
+              </button>
+              <button
+                onClick={toggleSidebar}
+                className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition"
+                title="Close sidebar"
+              >
+                <PanelLeftClose className="h-4 w-4" />
+              </button>
+            </div>
           </div>
-        </div>
 
-        {/* Conversation List */}
-        <div className="flex-1 overflow-y-auto px-2 scrollbar-thin">
-          {loading ? (
-            <div className="space-y-1 p-2">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="flex items-center gap-2 rounded-lg px-2 py-2">
-                  <div className="h-3.5 w-3.5 rounded bg-muted animate-pulse flex-shrink-0" />
-                  <div className="flex-1 space-y-1.5">
-                    <div
-                      className="h-2.5 rounded-full bg-muted animate-pulse"
-                      style={{ width: `${50 + Math.random() * 40}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
-              <div className="pt-2">
-                <div className="h-2 w-12 rounded-full bg-muted/50 animate-pulse mb-2" />
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <div key={`g${i}`} className="flex items-center gap-2 rounded-lg px-2 py-2">
+          {/* Search */}
+          <div className="px-3 pb-2">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search..."
+                className="w-full rounded-md bg-muted/50 py-1.5 pl-8 pr-3 text-xs outline-none focus:ring-1 focus:ring-primary/50 placeholder:text-muted-foreground/60"
+              />
+            </div>
+          </div>
+
+          {/* Conversation List */}
+          <div className="flex-1 overflow-y-auto px-2 scrollbar-thin">
+            {loading ? (
+              <div className="space-y-1 p-2">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="flex items-center gap-2 rounded-lg px-2 py-2">
                     <div className="h-3.5 w-3.5 rounded bg-muted animate-pulse flex-shrink-0" />
-                    <div
-                      className="h-2.5 rounded-full bg-muted animate-pulse"
-                      style={{ width: `${40 + Math.random() * 45}%` }}
-                    />
+                    <div className="flex-1 space-y-1.5">
+                      <div
+                        className="h-2.5 rounded-full bg-muted animate-pulse"
+                        style={{ width: `${50 + Math.random() * 40}%` }}
+                      />
+                    </div>
                   </div>
                 ))}
-              </div>
-            </div>
-          ) : (
-          <>
-          {Object.entries(groups).map(([label, convos]) => (
-            <div key={label} className="mb-3">
-              <p className="px-2 py-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60">
-                {label}
-              </p>
-              {convos.map((c) => (
-                <div
-                  key={c.id}
-                  className={`group relative flex items-center rounded-lg px-2 py-1.5 text-sm cursor-pointer transition ${
-                    activeConversationId === c.id
-                      ? "bg-gradient-to-r from-primary/10 to-transparent text-foreground"
-                      : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-                  }`}
-                  onClick={() => {
-                    if (editingId !== c.id) {
-                      setActiveConversationId(c.id);
-                      router.push(`/chat/${c.id}`);
-                    }
-                  }}
-                >
-                  <MessageSquare className="mr-2 h-3.5 w-3.5 flex-shrink-0" />
-
-                  {editingId === c.id ? (
-                    <div className="flex flex-1 items-center gap-1">
-                      <input
-                        ref={editInputRef}
-                        value={editTitle}
-                        onChange={(e) => setEditTitle(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") handleRename(c.id);
-                          if (e.key === "Escape") setEditingId(null);
-                        }}
-                        className="flex-1 rounded bg-muted px-1.5 py-0.5 text-xs outline-none"
-                        onClick={(e) => e.stopPropagation()}
+                <div className="pt-2">
+                  <div className="h-2 w-12 rounded-full bg-muted/50 animate-pulse mb-2" />
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <div key={`g${i}`} className="flex items-center gap-2 rounded-lg px-2 py-2">
+                      <div className="h-3.5 w-3.5 rounded bg-muted animate-pulse flex-shrink-0" />
+                      <div
+                        className="h-2.5 rounded-full bg-muted animate-pulse"
+                        style={{ width: `${40 + Math.random() * 45}%` }}
                       />
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleRename(c.id);
-                        }}
-                        className="p-0.5 text-muted-foreground hover:text-foreground"
-                      >
-                        <Check className="h-3 w-3" />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setEditingId(null);
-                        }}
-                        className="p-0.5 text-muted-foreground hover:text-foreground"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
                     </div>
-                  ) : (
-                    <>
-                      <span className="flex-1 truncate text-xs">{c.title}</span>
-                      <div className="relative opacity-0 group-hover:opacity-100 transition">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setContextMenuId(contextMenuId === c.id ? null : c.id);
-                          }}
-                          className="rounded p-0.5 text-muted-foreground hover:text-foreground"
-                        >
-                          <MoreHorizontal className="h-3.5 w-3.5" />
-                        </button>
-                        <AnimatePresence>
-                          {contextMenuId === c.id && (
-                            <motion.div
-                              initial={{ opacity: 0, scale: 0.95 }}
-                              animate={{ opacity: 1, scale: 1 }}
-                              exit={{ opacity: 0, scale: 0.95 }}
-                              transition={{ duration: 0.1 }}
-                              className="absolute right-0 top-full z-50 mt-1 w-40 rounded-lg border border-border/50 bg-card p-1 shadow-xl"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <button
-                                onClick={() => {
-                                  setContextMenuId(null);
-                                  startEditing(c);
-                                }}
-                                className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-xs text-muted-foreground hover:bg-muted/50 hover:text-foreground transition"
-                              >
-                                <Pencil className="h-3 w-3" />
-                                Rename
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setContextMenuId(null);
-                                  handleDelete(c.id);
-                                }}
-                                className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-xs text-destructive hover:bg-destructive/5 transition"
-                              >
-                                <Trash2 className="h-3 w-3" />
-                                Delete
-                              </button>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </div>
-                    </>
-                  )}
+                  ))}
                 </div>
-              ))}
-            </div>
-          ))}
+              </div>
+            ) : (
+              <>
+                {Object.entries(groups).map(([label, convos]) => (
+                  <div key={label} className="mb-3">
+                    <p className="px-2 py-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60">
+                      {label}
+                    </p>
+                    {convos.map((c) => (
+                      <div
+                        key={c.id}
+                        className={`group relative flex items-center rounded-lg px-2 py-1.5 text-sm cursor-pointer transition ${
+                          activeConversationId === c.id
+                            ? "bg-gradient-to-r from-primary/10 to-transparent text-foreground"
+                            : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                        }`}
+                        onClick={() => {
+                          if (editingId !== c.id) {
+                            handleSelectConversation(c.id);
+                          }
+                        }}
+                      >
+                        <MessageSquare className="mr-2 h-3.5 w-3.5 flex-shrink-0" />
 
-          {filtered.length === 0 && !loading && (
-            <div className="px-2 py-8 text-center text-xs text-muted-foreground/60">
-              {search ? "No results" : "No conversations yet"}
-            </div>
-          )}
-          </>
-          )}
-        </div>
+                        {editingId === c.id ? (
+                          <div className="flex flex-1 items-center gap-1">
+                            <input
+                              ref={editInputRef}
+                              value={editTitle}
+                              onChange={(e) => setEditTitle(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") handleRename(c.id);
+                                if (e.key === "Escape") setEditingId(null);
+                              }}
+                              className="flex-1 rounded bg-muted px-1.5 py-0.5 text-xs outline-none"
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRename(c.id);
+                              }}
+                              className="p-0.5 text-muted-foreground hover:text-foreground"
+                            >
+                              <Check className="h-3 w-3" />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingId(null);
+                              }}
+                              className="p-0.5 text-muted-foreground hover:text-foreground"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </div>
+                        ) : (
+                          <>
+                            <span className="flex-1 truncate text-xs">{c.title}</span>
+                            <div className="relative opacity-0 group-hover:opacity-100 transition">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setContextMenuId(contextMenuId === c.id ? null : c.id);
+                                }}
+                                className="rounded p-0.5 text-muted-foreground hover:text-foreground"
+                              >
+                                <MoreHorizontal className="h-3.5 w-3.5" />
+                              </button>
+                              <AnimatePresence>
+                                {contextMenuId === c.id && (
+                                  <motion.div
+                                    initial={{ opacity: 0, scale: 0.95 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    exit={{ opacity: 0, scale: 0.95 }}
+                                    transition={{ duration: 0.1 }}
+                                    className="absolute right-0 top-full z-50 mt-1 w-40 rounded-lg border border-border/50 bg-card p-1 shadow-xl"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <button
+                                      onClick={() => {
+                                        setContextMenuId(null);
+                                        startEditing(c);
+                                      }}
+                                      className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-xs text-muted-foreground hover:bg-muted/50 hover:text-foreground transition"
+                                    >
+                                      <Pencil className="h-3 w-3" />
+                                      Rename
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        setContextMenuId(null);
+                                        handleDelete(c.id);
+                                      }}
+                                      className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-xs text-destructive hover:bg-destructive/5 transition"
+                                    >
+                                      <Trash2 className="h-3 w-3" />
+                                      Delete
+                                    </button>
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ))}
 
-        {/* User Menu — Bottom */}
-        <div ref={userMenuRef} className="relative border-t border-border/50 p-2">
-          <button
-            onClick={() => setUserMenuOpen(!userMenuOpen)}
-            className="flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-sm text-muted-foreground hover:bg-muted/50 hover:text-foreground transition"
-          >
-            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-primary/60 to-accent/60 text-xs font-bold text-white">
-              N
-            </div>
-            <span className="flex-1 truncate text-xs">Nico</span>
-            <ChevronUp className={`h-3.5 w-3.5 transition ${userMenuOpen ? "" : "rotate-180"}`} />
-          </button>
-
-          <AnimatePresence>
-            {userMenuOpen && (
-              <motion.div
-                initial={{ opacity: 0, y: 4 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 4 }}
-                transition={{ duration: 0.15 }}
-                className="absolute bottom-full left-2 right-2 mb-1 rounded-lg border border-border/50 bg-card p-1 shadow-xl"
-              >
-                <button
-                  onClick={() => {
-                    setUserMenuOpen(false);
-                    router.push("/settings");
-                  }}
-                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-xs text-muted-foreground hover:bg-muted/50 hover:text-foreground transition"
-                >
-                  <Settings className="h-3.5 w-3.5" />
-                  Settings
-                </button>
-                <button
-                  onClick={() => {
-                    setUserMenuOpen(false);
-                    router.push("/settings/billing");
-                  }}
-                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-xs text-muted-foreground hover:bg-muted/50 hover:text-foreground transition"
-                >
-                  <User className="h-3.5 w-3.5" />
-                  Billing
-                </button>
-                <div className="my-1 border-t border-border/30" />
-                <button
-                  onClick={handleSignOut}
-                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-xs text-destructive hover:bg-destructive/5 transition"
-                >
-                  <LogOut className="h-3.5 w-3.5" />
-                  Sign Out
-                </button>
-              </motion.div>
+                {filtered.length === 0 && !loading && (
+                  <div className="px-2 py-8 text-center text-xs text-muted-foreground/60">
+                    {search ? "No results" : "No conversations yet"}
+                  </div>
+                )}
+              </>
             )}
-          </AnimatePresence>
+          </div>
+
+          {/* User Menu — Bottom */}
+          <div ref={userMenuRef} className="relative border-t border-border/50 p-2">
+            <button
+              onClick={() => setUserMenuOpen(!userMenuOpen)}
+              className="flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-sm text-muted-foreground hover:bg-muted/50 hover:text-foreground transition"
+            >
+              {profile?.avatar_url ? (
+                <img
+                  src={profile.avatar_url}
+                  alt={displayName}
+                  className="h-7 w-7 rounded-full object-cover"
+                />
+              ) : (
+                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-primary/60 to-accent/60 text-xs font-bold text-white">
+                  {avatarInitial}
+                </div>
+              )}
+              <span className="flex-1 truncate text-xs">{displayName}</span>
+              <ChevronUp className={`h-3.5 w-3.5 transition ${userMenuOpen ? "" : "rotate-180"}`} />
+            </button>
+
+            <AnimatePresence>
+              {userMenuOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 4 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute bottom-full left-2 right-2 mb-1 rounded-lg border border-border/50 bg-card p-1 shadow-xl"
+                >
+                  <button
+                    onClick={() => {
+                      setUserMenuOpen(false);
+                      router.push("/settings");
+                    }}
+                    className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-xs text-muted-foreground hover:bg-muted/50 hover:text-foreground transition"
+                  >
+                    <Settings className="h-3.5 w-3.5" />
+                    Settings
+                  </button>
+                  <button
+                    onClick={() => {
+                      setUserMenuOpen(false);
+                      router.push("/settings/billing");
+                    }}
+                    className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-xs text-muted-foreground hover:bg-muted/50 hover:text-foreground transition"
+                  >
+                    <User className="h-3.5 w-3.5" />
+                    Billing
+                  </button>
+                  <div className="my-1 border-t border-border/30" />
+                  <button
+                    onClick={handleSignOut}
+                    className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-xs text-destructive hover:bg-destructive/5 transition"
+                  >
+                    <LogOut className="h-3.5 w-3.5" />
+                    Sign Out
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
-      </div>
-    </motion.aside>
+      </motion.aside>
+    </>
   );
 }
