@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { decryptMessages } from "@/lib/crypto";
 import { redirect } from "next/navigation";
 
 export async function getConversations() {
@@ -101,5 +102,5 @@ export async function getMessages(conversationId: string) {
     .eq("conversation_id", conversationId)
     .order("created_at", { ascending: true });
 
-  return data ?? [];
+  return data ? decryptMessages(data) : [];
 }

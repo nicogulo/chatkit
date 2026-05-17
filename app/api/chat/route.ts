@@ -3,6 +3,7 @@ import { getModel, DEFAULT_MODEL } from "@/lib/ai";
 import { createClient } from "@/lib/supabase/server";
 import { canSendMessage, recordUsage } from "@/lib/actions/usage";
 import { rateLimit, RATE_LIMITS, getClientIp } from "@/lib/rate-limit";
+import { encrypt } from "@/lib/crypto";
 import { type ModelId } from "@/types";
 
 export const maxDuration = 60;
@@ -69,7 +70,7 @@ export async function POST(req: Request) {
           .insert({
             conversation_id: conversationId,
             role: "user",
-            content: userText,
+            content: encrypt(userText),
             model: selectedModel,
           })
           .then(() => {
@@ -113,7 +114,7 @@ Guidelines:
           await supabase.from("messages").insert({
             conversation_id: conversationId,
             role: "assistant",
-            content: text,
+            content: encrypt(text),
             tokens_input: usage.inputTokens ?? 0,
             tokens_output: usage.outputTokens ?? 0,
             model: selectedModel,
