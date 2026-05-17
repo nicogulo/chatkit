@@ -95,6 +95,9 @@ SUPABASE_SERVICE_ROLE_KEY=eyJhbGci...
 # AI Provider (from step 3)
 ZAI_API_KEY=your-api-key-here
 
+# Encryption (generate with: openssl rand -base64 32)
+ENCRYPTION_KEY=your-encryption-key-here
+
 # App URL
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
