@@ -1,4 +1,8 @@
 import { getAdminStats } from "@/lib/actions/admin";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 import {
   Users,
   MessageSquare,

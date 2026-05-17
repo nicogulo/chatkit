@@ -1,6 +1,9 @@
 import { getAdminUsers } from "@/lib/actions/admin";
 import { AdminUsersClient } from "@/components/admin/admin-users-client";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function AdminUsersPage({
   searchParams,
 }: {
