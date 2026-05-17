@@ -4,7 +4,7 @@ import { useChat, type UIMessage } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { Send, Loader2, PanelLeft, Sparkles } from "lucide-react";
+import { Send, Loader2, PanelLeft, Sparkles, Brain, Atom, Wand, Lightbulb } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
@@ -51,6 +51,60 @@ function MessageSkeleton({ count = 4 }: { count?: number }) {
         </div>
       ))}
     </div>
+  );
+}
+
+/** Claude-style thinking indicator with rotating phrases */
+function ThinkingIndicator() {
+  const phrases = [
+    { icon: Brain, text: "Thinking..." },
+    { icon: Atom, text: "Analyzing your question..." },
+    { icon: Wand, text: "Crafting a response..." },
+    { icon: Lightbulb, text: "Connecting the dots..." },
+    { icon: Sparkles, text: "Almost there..." },
+  ];
+
+  const [phraseIdx, setPhraseIdx] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setPhraseIdx((prev) => (prev + 1) % phrases.length);
+    }, 2500);
+    return () => clearInterval(interval);
+  }, []);
+
+  const current = phrases[phraseIdx];
+  const Icon = current.icon;
+
+  return (
+    <div className="flex items-center gap-2.5 rounded-2xl bg-card border border-primary/20 px-4 py-3 text-sm">
+      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10">
+        <Icon className="h-3.5 w-3.5 text-primary animate-pulse" />
+      </div>
+      <AnimatePresence mode="wait">
+        <motion.span
+          key={phraseIdx}
+          initial={{ opacity: 0, y: 4 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -4 }}
+          transition={{ duration: 0.3 }}
+          className="text-muted-foreground"
+        >
+          {current.text}
+        </motion.span>
+      </AnimatePresence>
+    </div>
+  );
+}
+
+/** Typing cursor for streaming assistant messages */
+function TypingCursor() {
+  return (
+    <motion.span
+      animate={{ opacity: [1, 0] }}
+      transition={{ duration: 0.5, repeat: Infinity, repeatType: "reverse" }}
+      className="inline-block w-[2px] h-[1.1em] bg-primary ml-0.5 align-middle rounded-full"
+    />
   );
 }
 
@@ -196,8 +250,10 @@ function ChatView({ conversationId }: { conversationId: string }) {
   }, [conversationId, historyLoaded, setMessages, sendMessage]);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, loadingHistory]);
+    if (isLoading) {
+      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages, isLoading]);
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -251,56 +307,60 @@ function ChatView({ conversationId }: { conversationId: string }) {
           <div className="px-4 py-6">
             <div className="mx-auto max-w-3xl space-y-6">
               <AnimatePresence initial={false}>
-                {messages.map((message, i) => (
-                  <motion.div
-                    key={message.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
-                  >
-                    <div className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${message.role === "user" ? "bg-primary text-primary-foreground" : "bg-card border border-border"}`}>
-                      {message.role === "assistant" ? (
-                        <div className="prose prose-invert prose-sm max-w-none">
-                          <ReactMarkdown remarkPlugins={[remarkGfm]} components={{
-                            code({ className, children, ...props }) {
-                              const match = /language-(\w+)/.exec(className || "");
-                              const code = String(children).replace(/\n$/, "");
-                              const blockId = `block-${i}`;
-                              if (match) {
-                                return (
-                                  <div className="relative group my-3">
-                                    <div className="flex items-center justify-between rounded-t-lg bg-[#282c34] px-4 py-1.5 text-xs text-gray-400">
-                                      <span>{match[1]}</span>
-                                      <button onClick={() => copyCode(code, blockId)} className="text-xs text-gray-400 hover:text-white transition">
-                                        {copiedBlock === blockId ? "Copied!" : "Copy"}
-                                      </button>
+                {messages.map((message, i) => {
+                  const isStreaming = isLoading && message.role === "assistant" && i === messages.length - 1;
+                  const msgText = getMessageText(message);
+
+                  return (
+                    <motion.div
+                      key={message.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
+                    >
+                      <div className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${message.role === "user" ? "bg-primary text-primary-foreground" : "bg-card border border-border"}`}>
+                        {message.role === "assistant" ? (
+                          <div className="prose prose-invert prose-sm max-w-none">
+                            <ReactMarkdown remarkPlugins={[remarkGfm]} components={{
+                              code({ className, children, ...props }) {
+                                const match = /language-(\w+)/.exec(className || "");
+                                const code = String(children).replace(/\n$/, "");
+                                const blockId = `block-${i}`;
+                                if (match) {
+                                  return (
+                                    <div className="relative group my-3">
+                                      <div className="flex items-center justify-between rounded-t-lg bg-[#282c34] px-4 py-1.5 text-xs text-gray-400">
+                                        <span>{match[1]}</span>
+                                        <button onClick={() => copyCode(code, blockId)} className="text-xs text-gray-400 hover:text-white transition">
+                                          {copiedBlock === blockId ? "Copied!" : "Copy"}
+                                        </button>
+                                      </div>
+                                      <SyntaxHighlighter style={oneDark} language={match[1]} PreTag="div" customStyle={{ margin: 0, borderRadius: "0 0 0.5rem 0.5rem" }}>
+                                        {code}
+                                      </SyntaxHighlighter>
                                     </div>
-                                    <SyntaxHighlighter style={oneDark} language={match[1]} PreTag="div" customStyle={{ margin: 0, borderRadius: "0 0 0.5rem 0.5rem" }}>
-                                      {code}
-                                    </SyntaxHighlighter>
-                                  </div>
-                                );
-                              }
-                              return <code className="rounded bg-muted px-1.5 py-0.5 text-xs" {...props}>{children}</code>;
-                            },
-                          }}>
-                            {getMessageText(message)}
-                          </ReactMarkdown>
-                        </div>
-                      ) : (
-                        <p className="whitespace-pre-wrap">{getMessageText(message)}</p>
-                      )}
-                    </div>
-                  </motion.div>
-                ))}
+                                  );
+                                }
+                                return <code className="rounded bg-muted px-1.5 py-0.5 text-xs" {...props}>{children}</code>;
+                              },
+                            }}>
+                              {msgText}
+                            </ReactMarkdown>
+                            {isStreaming && <TypingCursor />}
+                          </div>
+                        ) : (
+                          <p className="whitespace-pre-wrap">{getMessageText(message)}</p>
+                        )}
+                      </div>
+                    </motion.div>
+                  );
+                })}
               </AnimatePresence>
 
               {isLoading && messages[messages.length - 1]?.role === "user" && !error && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-start">
-                  <div className="flex items-center gap-2 rounded-2xl bg-card border border-border px-4 py-3 text-sm text-muted-foreground">
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" /> Thinking...
-                  </div>
+                  <ThinkingIndicator />
                 </motion.div>
               )}
 
