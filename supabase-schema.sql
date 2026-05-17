@@ -1,6 +1,7 @@
 -- ============================================================
 -- ChatKit — Complete Database Schema
 -- Run this in Supabase SQL Editor (Dashboard → SQL Editor → New Query)
+-- Safe to re-run: uses IF NOT EXISTS and DROP IF EXISTS where needed
 -- ============================================================
 
 -- 1. PROFILES
@@ -63,7 +64,7 @@ CREATE TABLE IF NOT EXISTS public.messages (
 CREATE TABLE IF NOT EXISTS public.usage (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
-  model TEXT NOT NULL,
+  model TEXT NOT NULL DEFAULT 'glm-4.5-air',
   tokens_input INTEGER NOT NULL DEFAULT 0,
   tokens_output INTEGER NOT NULL DEFAULT 0,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -102,6 +103,21 @@ ALTER TABLE public.conversations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.usage ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.subscriptions ENABLE ROW LEVEL SECURITY;
+
+-- Drop existing policies first (idempotent — safe to re-run)
+DROP POLICY IF EXISTS "Users can view own profile" ON public.profiles;
+DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
+DROP POLICY IF EXISTS "Users can view own conversations" ON public.conversations;
+DROP POLICY IF EXISTS "Users can create conversations" ON public.conversations;
+DROP POLICY IF EXISTS "Users can update own conversations" ON public.conversations;
+DROP POLICY IF EXISTS "Users can delete own conversations" ON public.conversations;
+DROP POLICY IF EXISTS "Users can view own messages" ON public.messages;
+DROP POLICY IF EXISTS "Users can insert own messages" ON public.messages;
+DROP POLICY IF EXISTS "Users can view own usage" ON public.usage;
+DROP POLICY IF EXISTS "Users can insert own usage" ON public.usage;
+DROP POLICY IF EXISTS "Users can view own subscriptions" ON public.subscriptions;
+DROP POLICY IF EXISTS "Users can insert own subscriptions" ON public.subscriptions;
+DROP POLICY IF EXISTS "Users can update own subscriptions" ON public.subscriptions;
 
 -- Profiles: users can read/update own profile
 CREATE POLICY "Users can view own profile"
@@ -142,7 +158,7 @@ CREATE POLICY "Users can insert own messages"
     SELECT id FROM public.conversations WHERE user_id = auth.uid()
   ));
 
--- Usage: read own usage
+-- Usage: read/insert own usage
 CREATE POLICY "Users can view own usage"
   ON public.usage FOR SELECT
   USING (auth.uid() = user_id);
@@ -151,7 +167,7 @@ CREATE POLICY "Users can insert own usage"
   ON public.usage FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
--- Subscriptions: read own subscriptions
+-- Subscriptions: read/insert/update own subscriptions
 CREATE POLICY "Users can view own subscriptions"
   ON public.subscriptions FOR SELECT
   USING (auth.uid() = user_id);
