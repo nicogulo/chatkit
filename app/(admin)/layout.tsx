@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
-import { createServerClient } from "@supabase/ssr";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { AdminSidebar } from "@/components/admin/admin-sidebar";
 
 export default async function AdminLayout({
@@ -8,7 +7,6 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // Step 1: Check auth with regular client
   const supabase = await createClient();
   const {
     data: { user },
@@ -16,18 +14,7 @@ export default async function AdminLayout({
 
   if (!user) redirect("/login");
 
-  // Step 2: Check role with service-role client (bypasses RLS for reliable role check)
-  const adminClient = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    {
-      cookies: {
-        getAll() { return []; },
-        setAll() {},
-      },
-    }
-  );
-
+  const adminClient = await createAdminClient();
   const { data: profile } = await adminClient
     .from("profiles")
     .select("role")

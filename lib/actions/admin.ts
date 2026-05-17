@@ -1,30 +1,7 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
-import { createServerClient } from "@supabase/ssr";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
-
-/** Create a service-role Supabase client that bypasses RLS */
-async function createAdminClient() {
-  const { cookies } = await import("next/headers");
-  const cookieStore = await cookies();
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, options)
-          );
-        },
-      },
-    }
-  );
-}
 
 /** Verify current user is admin — throws if not */
 async function requireAdmin() {
@@ -35,13 +12,17 @@ async function requireAdmin() {
 
   if (!user) throw new Error("Unauthorized");
 
-  // Use admin client to read own profile (bypasses RLS to ensure we get the role)
   const adminClient = await createAdminClient();
-  const { data: profile } = await adminClient
+  const { data: profile, error } = await adminClient
     .from("profiles")
     .select("role")
     .eq("id", user.id)
     .single();
+
+  if (error) {
+    console.error("[requireAdmin] profile fetch error:", error.message);
+    throw new Error("Forbidden — admin only");
+  }
 
   if (!profile || profile.role !== "admin") {
     throw new Error("Forbidden — admin only");
@@ -60,6 +41,11 @@ export async function getAdminStats() {
     adminClient.from("messages").select("id", { count: "exact" }),
     adminClient.from("usage").select("tokens_input, tokens_output"),
   ]);
+
+  if (users.error) console.error("[getAdminStats] users error:", users.error.message);
+  if (conversations.error) console.error("[getAdminStats] conversations error:", conversations.error.message);
+  if (messages.error) console.error("[getAdminStats] messages error:", messages.error.message);
+  if (usage.error) console.error("[getAdminStats] usage error:", usage.error.message);
 
   const totalUsers = users.count ?? 0;
   const totalConversations = conversations.count ?? 0;
@@ -113,7 +99,9 @@ export async function getAdminUsers(opts?: {
     query = query.eq("plan", opts.plan);
   }
 
-  const { data, count } = await query;
+  const { data, count, error } = await query;
+
+  if (error) console.error("[getAdminUsers] error:", error.message);
 
   return {
     users: data ?? [],
