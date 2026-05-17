@@ -23,14 +23,13 @@ export function ModelSelector() {
   const current = MODELS.find((m) => m.id === selectedModel) ?? MODELS[0];
 
   return (
-    <div ref={ref} className="relative">
+    <div ref={ref} className="relative shrink-0">
       <button
         onClick={() => setOpen(!open)}
-        className="flex shrink-0 items-center gap-1 rounded-lg px-2 py-2 text-xs font-medium text-muted-foreground hover:bg-muted/50 hover:text-foreground transition sm:px-2.5 sm:py-1.5"
+        className="flex items-center gap-1 rounded-lg px-2 py-2.5 text-xs font-medium text-muted-foreground hover:bg-muted/50 hover:text-foreground transition sm:py-1.5 sm:px-2.5"
       >
-        <span className="hidden sm:inline">{current.name}</span>
-        <span className="sm:hidden">{current.id.split('-').pop()}</span>
-        <ChevronDown className={`h-3 w-3 transition ${open ? "rotate-180" : ""}`} />
+        <span className="max-w-[80px] truncate sm:max-w-none">{current.name}</span>
+        <ChevronDown className={`h-3 w-3 shrink-0 transition ${open ? "rotate-180" : ""}`} />
       </button>
 
       <AnimatePresence>
@@ -40,26 +39,29 @@ export function ModelSelector() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
             transition={{ duration: 0.15 }}
-            className="absolute bottom-full left-0 mb-1 w-52 rounded-lg border border-border bg-card p-1 shadow-xl"
+            className="fixed inset-x-3 bottom-[70px] z-50 rounded-lg border border-border bg-card p-1 shadow-xl sm:fixed sm:inset-x-auto sm:bottom-auto sm:left-auto sm:right-0 sm:top-auto sm:mb-1 sm:w-52 sm:absolute sm:bottom-full"
+            style={{ maxHeight: "50vh" }}
           >
-            {MODELS.map((model) => (
-              <button
-                key={model.id}
-                onClick={() => {
-                  setSelectedModel(model.id as ModelId);
-                  setOpen(false);
-                }}
-                className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-xs hover:bg-muted/50 transition"
-              >
-                <div className="flex-1">
-                  <div className="font-medium text-foreground">{model.name}</div>
-                  <div className="text-muted-foreground">{model.description}</div>
-                </div>
-                {selectedModel === model.id && (
-                  <Check className="h-3.5 w-3.5 text-primary" />
-                )}
-              </button>
-            ))}
+            <div className="overflow-y-auto" style={{ maxHeight: "calc(50vh - 16px)" }}>
+              {MODELS.map((model) => (
+                <button
+                  key={model.id}
+                  onClick={() => {
+                    setSelectedModel(model.id as ModelId);
+                    setOpen(false);
+                  }}
+                  className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-xs hover:bg-muted/50 transition"
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-foreground truncate">{model.name}</div>
+                    <div className="text-muted-foreground truncate">{model.description}</div>
+                  </div>
+                  {selectedModel === model.id && (
+                    <Check className="h-3.5 w-3.5 shrink-0 text-primary" />
+                  )}
+                </button>
+              ))}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

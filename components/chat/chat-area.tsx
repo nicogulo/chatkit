@@ -163,7 +163,7 @@ function WelcomeScreen() {
       </div>
 
       <div className="border-t border-border p-2 sm:p-4">
-        <form onSubmit={handleSend} className="mx-auto flex max-w-3xl items-end gap-1.5 sm:gap-2">
+        <form onSubmit={handleSend} className="mx-auto flex max-w-3xl items-end gap-1.5 overflow-hidden sm:gap-2">
           <div className="flex-1 min-w-0">
             <textarea
               value={input}
@@ -374,7 +374,7 @@ function ChatView({ conversationId }: { conversationId: string }) {
       </div>
 
       <div className="border-t border-border p-2 sm:p-4">
-        <form onSubmit={handleSubmit} className="mx-auto flex max-w-3xl items-end gap-1.5 sm:gap-2">
+        <form onSubmit={handleSubmit} className="mx-auto flex max-w-3xl items-end gap-1.5 overflow-hidden sm:gap-2">
           <div className="flex-1 min-w-0">
             <textarea
               ref={textareaRef}
