@@ -24,7 +24,7 @@ export function HeroSection() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.1 }}
-        className="mx-auto max-w-4xl text-3xl font-bold tracking-tight sm:text-5xl lg:text-7xl"
+        className="mx-auto max-w-4xl text-3xl font-bold tracking-tight leading-tight overflow-hidden sm:text-5xl lg:text-7xl"
       >
         Build your{" "}
         <span className="gradient-text">

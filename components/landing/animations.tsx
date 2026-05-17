@@ -50,7 +50,7 @@ export function TypewriterText({
   }, [charIdx, isDeleting, textIdx, texts, speed, deleteSpeed, pauseMs]);
 
   return (
-    <span className={className} style={{ display: "inline-block", minWidth: `${longestText.length}ch` }}>
+    <span className={className} style={{ display: "inline-block", position: "relative" }}>
       {display}
       <motion.span
         animate={{ opacity: [1, 0] }}
