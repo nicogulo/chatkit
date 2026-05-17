@@ -1,6 +1,7 @@
 // ChatKit — Type Definitions
 
 export type Plan = "free" | "pro" | "enterprise";
+export type UserRole = "user" | "admin";
 export type MessageRole = "user" | "assistant" | "system";
 export type ModelId = "glm-5" | "glm-4.7" | "glm-4.7-flash" | "glm-4.5-air";
 export type SubscriptionStatus =
@@ -15,6 +16,8 @@ export interface Profile {
   display_name: string | null;
   avatar_url: string | null;
   plan: Plan;
+  role: UserRole;
+  banned: boolean;
   stripe_customer_id: string | null;
   created_at: string;
   updated_at: string;

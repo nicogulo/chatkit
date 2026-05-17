@@ -36,6 +36,18 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  // Admin routes — require admin role
+  const isAdminRoute = request.nextUrl.pathname.startsWith("/admin");
+  if (isAdminRoute) {
+    if (!user) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/login";
+      return NextResponse.redirect(url);
+    }
+    // Fetch profile to check role — use service-level check in server components
+    // Middleware only checks auth here; role check happens in server actions/layout
+  }
+
   // Protected routes — redirect to /login if not authenticated
   const isChatRoute =
     request.nextUrl.pathname.startsWith("/chat") ||

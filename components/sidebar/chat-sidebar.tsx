@@ -13,6 +13,7 @@ import {
   Search,
   PanelLeftClose,
   Settings,
+  Shield,
   LogOut,
   User,
   ChevronUp,
@@ -415,6 +416,18 @@ export function ChatSidebar() {
                     <Settings className="h-3.5 w-3.5" />
                     Settings
                   </button>
+                  {profile?.role === "admin" && (
+                    <button
+                      onClick={() => {
+                        setUserMenuOpen(false);
+                        router.push("/admin");
+                      }}
+                      className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-xs text-primary hover:bg-primary/5 transition"
+                    >
+                      <Shield className="h-3.5 w-3.5" />
+                      Admin Panel
+                    </button>
+                  )}
                   <button
                     onClick={() => {
                       setUserMenuOpen(false);

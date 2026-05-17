@@ -8,16 +8,11 @@
 - [x] US-015: Usage dashboard
 - [x] US-017: Responsive mobile
 - [x] US-018: User avatar real data
-- [x] Landing page typewriter effect
-- [x] Chat bubble typing animation
-- [x] Claude-style thinking indicator
-- [x] Typing cursor on streaming
-- [x] Layout shift fix
+- [x] US-016: Admin panel (user management)
 
-## Bugs
-- [ ] (none currently)
+## Blocked
+- ⚠️ Need Nico to run SQL migration in Supabase Dashboard to add `role` + `banned` columns
 
 ## Features
-- [ ] US-016: Admin panel
 - [ ] Stripe → Lemon Squeezy migration
 - [ ] Update pricing page copy (GLM models)
