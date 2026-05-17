@@ -115,9 +115,10 @@ const plans = [
     cta: "Get Started",
     features: [
       "20 messages per day",
-      "GLM-4.7 Flash model",
-      "Chat history",
-      "GitHub OAuth",
+      "GLM-4.5 Air (fastest)",
+      "GLM-4.7 Flash (fast)",
+      "Chat history & search",
+      "Encrypted message storage",
     ],
   },
   {
@@ -128,7 +129,8 @@ const plans = [
     cta: "Subscribe Now",
     features: [
       "Unlimited messages",
-      "All AI models (GLM-5, GLM-4.7)",
+      "All AI models included",
+      "GLM-4.7 (balanced) & GLM-5 (most capable)",
       "Custom system prompts",
       "Priority support",
       "Advanced chat management",
