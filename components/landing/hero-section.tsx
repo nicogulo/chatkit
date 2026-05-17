@@ -32,7 +32,6 @@ export function HeroSection() {
           speed={70}
           deleteSpeed={35}
           pauseMs={2500}
-          className="gradient-text"
         />
         <br />
         with Next.js

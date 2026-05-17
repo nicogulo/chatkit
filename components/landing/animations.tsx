@@ -47,7 +47,17 @@ export function TypewriterText({
   }, [charIdx, isDeleting, textIdx, texts, speed, deleteSpeed, pauseMs]);
 
   return (
-    <span className={className}>
+    <span
+      className={className}
+      style={{
+        backgroundImage: "linear-gradient(135deg, #7c3aed 0%, #2563eb 50%, #06b6d4 100%)",
+        WebkitBackgroundClip: "text",
+        backgroundClip: "text",
+        WebkitTextFillColor: "transparent",
+        display: "inline",
+        color: "transparent",
+      }}
+    >
       {display}
       <motion.span
         animate={{ opacity: [1, 0] }}
